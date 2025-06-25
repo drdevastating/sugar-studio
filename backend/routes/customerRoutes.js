@@ -5,6 +5,9 @@ const customerController = require('../controllers/customerController');
 // GET /api/customers - Get all customers (with optional filters)
 router.get('/', customerController.getAllCustomers);
 
+// GET /api/customers/email/:email - Get customer by email (MOVED UP)
+router.get('/email/:email', customerController.getCustomerByEmail);
+
 // GET /api/customers/:id - Get single customer by ID
 router.get('/:id', customerController.getCustomerById);
 
@@ -13,9 +16,6 @@ router.get('/:id/orders', customerController.getCustomerOrders);
 
 // GET /api/customers/:id/stats - Get customer statistics
 router.get('/:id/stats', customerController.getCustomerStats);
-
-// GET /api/customers/email/:email - Get customer by email
-router.get('/email/:email', customerController.getCustomerByEmail);
 
 // POST /api/customers - Create new customer
 router.post('/', customerController.createCustomer);

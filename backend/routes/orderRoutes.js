@@ -5,7 +5,7 @@ const orderController = require('../controllers/orderController');
 // GET /api/orders - Get all orders (with optional filters)
 router.get('/', orderController.getAllOrders);
 
-// GET /api/orders/stats - Get order statistics
+// GET /api/orders/stats - Get order statistics (MOVED UP)
 router.get('/stats', orderController.getOrderStats);
 
 // GET /api/orders/:id - Get single order by ID with items

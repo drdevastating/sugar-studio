@@ -5,7 +5,7 @@ const categoryController = require('../controllers/categoryController');
 // GET /api/categories - Get all categories
 router.get('/', categoryController.getAllCategories);
 
-// GET /api/categories/stats - Get category statistics
+// GET /api/categories/stats - Get category statistics (MOVED UP)
 router.get('/stats', categoryController.getCategoryStats);
 
 // GET /api/categories/:id - Get single category by ID
