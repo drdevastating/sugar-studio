@@ -1,19 +1,22 @@
-
+// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const path = require('path');
-const fs = require('fs');
+
 // Load environment variables
 dotenv.config();
 
 // Import routes
+const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 
 // Import database connection
 const pool = require('./config/database');
@@ -21,6 +24,7 @@ const pool = require('./config/database');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(helmet()); // Security headers
 app.use(cors()); // Enable CORS
 
@@ -35,75 +39,72 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // Static files (for images, etc.)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-/*
-When a browser or frontend app requests http://localhost:5000/uploads/image.jpg, it will look for and return the file:
-backend/uploads/image.jpg
-*/
+
+// Root route
 app.get('/', (req, res) => {
-  res.send('🍰 Welcome to Sweet Bakery API!');
+  res.json({
+    status: 'success',
+    message: '🍰 Welcome to Sugar Studio API!',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      products: '/api/products',
+      categories: '/api/categories',
+      customers: '/api/customers',
+      orders: '/api/orders',
+      cart: '/api/cart'
+    }
+  });
 });
 
-// Routes
+// API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/categories', categoryRoutes);
-/*
-https://sweetcakes.com/ ← frontend React app
-https://sweetcakes.com/gallery ← frontend route
-https://sweetcakes.com/api/products ← backend API (hidden from user, used by frontend JS)
- */
+app.use('/api/upload', uploadRoutes);
+app.use('/api/cart', cartRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : {}
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
   });
 });
-//Because Express recognizes this as an error-handling middleware only if it has 4 arguments
 
 // 404 handler
-// app.use('*', (req, res) => { // BKC ISKI WAJAH SE ITNA BADA ERROR AATA HAI
-//   res.status(404).json({
-//     status: 'error',
-//     message: 'Route not found'
-//   });
-// });
 app.use((req, res) => {
   res.status(404).json({
     status: 'error',
-    message: 'Route not found'
+    message: 'Route not found',
+    path: req.path
   });
 });
-/*
-404	Client error — Route not found	
-500	Server error — Something broke
-*/
 
-
-// Run schema.sql on startup (once)
-// async function initializeDatabase() {
-//   try {
-//     const schemaPath = path.join(__dirname, 'database', 'schema.sql');
-//     const schema = fs.readFileSync(schemaPath, 'utf8');
-//     await pool.query(schema);
-//     console.log('✅ Database schema initialized');
-//   } catch (error) {
-//     console.error('❌ Failed to initialize schema:', error.message);
-//   }
-// }
-
-// // Start the server
-// initializeDatabase().then(() => {
-//   app.listen(PORT, () => {
-//     console.log(`🚀 Bakery server running on port ${PORT}`);
-//   });
-// });
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  
+  res.status(err.status || 500).json({
+    status: 'error',
+    message: err.message || 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : {}
+  });
+});
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`🚀 Bakery server running on port ${PORT}`);
+  console.log(`🚀 Sugar Studio server running on port ${PORT}`);
+  console.log(`📍 API available at http://localhost:${PORT}`);
+  console.log(`📁 Static files served from: ${path.join(__dirname, 'uploads')}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Rejection:', err);
+  // Close server & exit process
+  process.exit(1);
 });
