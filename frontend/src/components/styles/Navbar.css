@@ -1,3 +1,4 @@
+/* frontend/src/components/styles/Navbar.css */
 .navbar {
   position: fixed;
   top: 0;
@@ -76,6 +77,9 @@
   position: relative;
   cursor: pointer;
   transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nav-link:hover {
@@ -97,10 +101,27 @@
   width: 100%;
 }
 
+.admin-link {
+  color: #ec4899;
+  font-weight: 600;
+}
+
 .navbar-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(236, 72, 153, 0.1);
+  border-radius: 25px;
+  color: #ec4899;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .action-btn {
@@ -116,11 +137,22 @@
   transition: all 0.3s ease;
   font-size: 0.9rem;
   font-weight: 500;
+  text-decoration: none;
 }
 
 .action-btn:hover {
   background: rgba(236, 72, 153, 0.1);
   color: #ec4899;
+}
+
+.logout-action {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.logout-action:hover {
+  background: #dc2626;
+  color: white;
 }
 
 .cart-icon-wrapper {
@@ -184,10 +216,22 @@
 
 .mobile-actions {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #f3f4f6;
+}
+
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(236, 72, 153, 0.1);
+  border-radius: 8px;
+  color: #ec4899;
+  font-weight: 600;
 }
 
 .mobile-action-btn {
@@ -201,8 +245,13 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
-  flex: 1;
   justify-content: center;
+  text-decoration: none;
+}
+
+.logout-mobile {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* Mobile Responsive */
