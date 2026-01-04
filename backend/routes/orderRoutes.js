@@ -1,23 +1,18 @@
+// backend/routes/orderRoutes.js
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const { verifyToken, requireStaff } = require('../middleware/auth');
 
-// GET /api/orders - Get all orders (with optional filters)
-router.get('/', orderController.getAllOrders);
-
-// GET /api/orders/stats - Get order statistics (MOVED UP)
-router.get('/stats', orderController.getOrderStats);
-
-// GET /api/orders/:id - Get single order by ID with items
-router.get('/:id', orderController.getOrderById);
-
-// POST /api/orders - Create new order
+// Public routes
+router.get('/track/:orderNumber', orderController.trackOrder);
 router.post('/', orderController.createOrder);
 
-// PATCH /api/orders/:id/status - Update order status
-router.patch('/:id/status', orderController.updateOrderStatus);
-
-// PATCH /api/orders/:id/cancel - Cancel order
-router.patch('/:id/cancel', orderController.cancelOrder);
+// Protected routes (staff only)
+router.get('/', verifyToken, requireStaff, orderController.getAllOrders);
+router.get('/stats', verifyToken, requireStaff, orderController.getOrderStats);
+router.get('/:id', verifyToken, requireStaff, orderController.getOrderById);
+router.patch('/:id/status', verifyToken, requireStaff, orderController.updateOrderStatus);
+router.patch('/:id/cancel', verifyToken, requireStaff, orderController.cancelOrder);
 
 module.exports = router;

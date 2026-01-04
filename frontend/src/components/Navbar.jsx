@@ -12,7 +12,8 @@ const Navbar = () => {
   const [cartItems, setCartItems] = useState(3) // Mock cart count
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, isAuthenticated, logout } = useAuth()
+  // Get isStaff from useAuth hook
+  const { user, isAuthenticated, isStaff, logout } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,11 +68,19 @@ const Navbar = () => {
           <Link to="/contact" className="nav-link">
             Contact Us
           </Link>
-          {isAuthenticated && (
-            <Link to="/admin/dashboard" className="nav-link admin-link">
-              <LayoutDashboard size={16} />
-              Dashboard
-            </Link>
+          <Link to="/track-order" className="nav-link">
+            Track Order
+          </Link>
+          {isAuthenticated && isStaff && (
+            <>
+              <Link to="/admin/dashboard" className="nav-link admin-link">
+                <LayoutDashboard size={16} />
+                Dashboard
+              </Link>
+              <Link to="/admin/orders" className="nav-link admin-link">
+                Orders
+              </Link>
+            </>
           )}
         </div>
 
@@ -94,13 +103,13 @@ const Navbar = () => {
               <span className="btn-text">Login</span>
             </Link>
           )}
-          <button className="action-btn cart-btn">
+          <Link to="/checkout" className="action-btn cart-btn">
             <div className="cart-icon-wrapper">
               <ShoppingCart size={20} />
               {cartItems > 0 && <span className="cart-badge">{cartItems}</span>}
             </div>
             <span className="btn-text">Cart</span>
-          </button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -124,10 +133,18 @@ const Navbar = () => {
           <Link to="/contact" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
             Contact Us
           </Link>
-          {isAuthenticated && (
-            <Link to="/admin/dashboard" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-              Dashboard
-            </Link>
+          <Link to="/track-order" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+            Track Order
+          </Link>
+          {isAuthenticated && isStaff && (
+            <>
+              <Link to="/admin/dashboard" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                Dashboard
+              </Link>
+              <Link to="/admin/orders" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                Orders
+              </Link>
+            </>
           )}
           <div className="mobile-actions">
             {isAuthenticated ? (
@@ -147,10 +164,10 @@ const Navbar = () => {
                 Login
               </Link>
             )}
-            <button className="mobile-action-btn">
+            <Link to="/checkout" className="mobile-action-btn" onClick={() => setIsMobileMenuOpen(false)}>
               <ShoppingCart size={18} />
               Cart ({cartItems})
-            </button>
+            </Link>
           </div>
         </div>
       )}

@@ -1,4 +1,10 @@
+// backend/controllers/orderController.js
 const pool = require('../config/database');
+const { 
+  sendOrderConfirmation, 
+  sendBakerNotification, 
+  sendOrderStatusUpdate 
+} = require('../services/emailService');
 
 const generateOrderNumber = () => {
   const prefix = 'BK';
@@ -128,7 +134,57 @@ const orderController = {
     }
   },
 
-  // Create new order
+  // Track order by order number (public endpoint)
+  trackOrder: async (req, res) => {
+    try {
+      const { orderNumber } = req.params;
+      
+      const query = `
+        SELECT o.id, o.order_number, o.status, o.total_amount, 
+               o.order_type, o.scheduled_time, o.created_at, o.updated_at,
+               c.first_name, c.last_name, c.email, c.phone
+        FROM orders o
+        LEFT JOIN customers c ON o.customer_id = c.id
+        WHERE o.order_number = $1
+      `;
+      
+      const result = await pool.query(query, [orderNumber]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Order not found'
+        });
+      }
+      
+      // Get order items
+      const itemsQuery = `
+        SELECT oi.quantity, oi.unit_price, oi.subtotal,
+               p.name as product_name, p.image_url
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = $1
+      `;
+      
+      const itemsResult = await pool.query(itemsQuery, [result.rows[0].id]);
+      
+      const order = result.rows[0];
+      order.items = itemsResult.rows;
+      
+      res.json({
+        status: 'success',
+        data: order
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to track order',
+        error: error.message
+      });
+    }
+  },
+
+  // Create new order (guest checkout)
   createOrder: async (req, res) => {
     const client = await pool.connect();
     
@@ -136,12 +192,53 @@ const orderController = {
       await client.query('BEGIN');
       
       const {
-        customer_id, items, order_type, scheduled_time,
-        delivery_address, notes, payment_method
+        customer, // { first_name, last_name, email, phone, address }
+        items,
+        order_type,
+        scheduled_time,
+        delivery_address,
+        notes,
+        payment_method
       } = req.body;
+      
+      // Validate
+      if (!customer || !customer.email || !customer.phone) {
+        throw new Error('Customer email and phone are required');
+      }
       
       if (!items || items.length === 0) {
         throw new Error('Order must contain at least one item');
+      }
+      
+      // Check if customer exists or create new one
+      let customerId;
+      const existingCustomer = await client.query(
+        'SELECT id FROM customers WHERE email = $1',
+        [customer.email]
+      );
+      
+      if (existingCustomer.rows.length > 0) {
+        customerId = existingCustomer.rows[0].id;
+        
+        // Update customer info if provided
+        await client.query(
+          `UPDATE customers 
+           SET first_name = COALESCE($1, first_name),
+               last_name = COALESCE($2, last_name),
+               phone = COALESCE($3, phone),
+               address = COALESCE($4, address)
+           WHERE id = $5`,
+          [customer.first_name, customer.last_name, customer.phone, customer.address, customerId]
+        );
+      } else {
+        // Create new customer
+        const customerResult = await client.query(
+          `INSERT INTO customers (first_name, last_name, email, phone, address)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id`,
+          [customer.first_name, customer.last_name, customer.email, customer.phone, customer.address]
+        );
+        customerId = customerResult.rows[0].id;
       }
       
       // Calculate total amount
@@ -162,6 +259,7 @@ const orderController = {
         
         orderItems.push({
           product_id: item.product_id,
+          product_name: product.name,
           quantity: item.quantity,
           unit_price: product.price,
           subtotal,
@@ -181,14 +279,20 @@ const orderController = {
       const orderQuery = `
         INSERT INTO orders 
         (customer_id, order_number, total_amount, order_type, scheduled_time, 
-         delivery_address, notes, payment_method)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         delivery_address, notes, payment_method, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
         RETURNING *
       `;
       
       const orderValues = [
-        customer_id, orderNumber, totalAmount, order_type || 'pickup',
-        scheduled_time, delivery_address, notes, payment_method
+        customerId,
+        orderNumber,
+        totalAmount,
+        order_type || 'pickup',
+        scheduled_time,
+        delivery_address || customer.address,
+        notes,
+        payment_method || 'cod'
       ];
       
       const orderResult = await client.query(orderQuery, orderValues);
@@ -210,16 +314,34 @@ const orderController = {
       
       await client.query('COMMIT');
       
-      // Fetch complete order with items
-      const completeOrder = await orderController.getOrderById(
-        { params: { id: order.id } },
-        { json: (data) => data }
+      // Prepare complete order object with items
+      order.items = orderItems;
+      
+      // Send emails asynchronously (don't wait for them)
+      const customerData = {
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        email: customer.email,
+        phone: customer.phone
+      };
+      
+      sendOrderConfirmation(order, customerData).catch(err => 
+        console.error('Failed to send customer email:', err)
+      );
+      
+      sendBakerNotification(order, customerData).catch(err => 
+        console.error('Failed to send baker email:', err)
       );
       
       res.status(201).json({
         status: 'success',
-        message: 'Order created successfully',
-        data: order
+        message: 'Order placed successfully! Check your email for confirmation.',
+        data: {
+          order_number: order.order_number,
+          order_id: order.id,
+          total_amount: order.total_amount,
+          status: order.status
+        }
       });
       
     } catch (error) {
@@ -240,7 +362,7 @@ const orderController = {
       const { id } = req.params;
       const { status } = req.body;
       
-      const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+      const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'];
       
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
@@ -263,6 +385,24 @@ const orderController = {
           status: 'error',
           message: 'Order not found'
         });
+      }
+      
+      const order = result.rows[0];
+      
+      // Get customer details and send status update email
+      const customerQuery = `
+        SELECT c.first_name, c.last_name, c.email
+        FROM customers c
+        WHERE c.id = $1
+      `;
+      
+      const customerResult = await pool.query(customerQuery, [order.customer_id]);
+      
+      if (customerResult.rows.length > 0) {
+        const customer = customerResult.rows[0];
+        sendOrderStatusUpdate(order, customer, status).catch(err => 
+          console.error('Failed to send status update email:', err)
+        );
       }
       
       res.json({
@@ -321,6 +461,22 @@ const orderController = {
       
       await client.query('COMMIT');
       
+      // Send cancellation email
+      const customerQuery = `
+        SELECT c.first_name, c.last_name, c.email
+        FROM customers c
+        WHERE c.id = $1
+      `;
+      
+      const customerResult = await pool.query(customerQuery, [order.customer_id]);
+      
+      if (customerResult.rows.length > 0) {
+        const customer = customerResult.rows[0];
+        sendOrderStatusUpdate(order, customer, 'cancelled').catch(err => 
+          console.error('Failed to send cancellation email:', err)
+        );
+      }
+      
       res.json({
         status: 'success',
         message: 'Order cancelled successfully'
@@ -357,7 +513,8 @@ const orderController = {
           SUM(total_amount) as total_revenue,
           AVG(total_amount) as average_order_value,
           COUNT(CASE WHEN status = 'delivered' THEN 1 END) as completed_orders,
-          COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders
+          COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,
+          COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders
         FROM orders
         ${dateFilter}
       `;

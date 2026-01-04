@@ -27,6 +27,11 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/products/new" element={<ProductForm />} />
             <Route path="/admin/products/edit/:id" element={<ProductForm />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/track-order" element={<OrderTracking />} />
+            <Route path="/track-order/:orderNumber" element={<OrderTracking />} />
+            <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmation />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
           </Routes>
         </div>
       </Router>
