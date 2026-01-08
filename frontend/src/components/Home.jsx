@@ -1,7 +1,7 @@
-"use client"
-
+// frontend/src/components/Home.jsx
 import { useState, useEffect } from "react"
-import { Star, Plus, Heart } from "lucide-react"
+import { Star, Plus, Heart, Check } from "lucide-react"
+import { useCart } from "../context/CartContext"
 import logo from "../assets/logo.jpeg"
 import "./styles/Home.css"
 
@@ -10,6 +10,8 @@ const Home = () => {
   const [menuItems, setMenuItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [addedToCart, setAddedToCart] = useState({})
+  const { addToCart } = useCart()
 
   // Fetch products from backend
   useEffect(() => {
@@ -24,10 +26,10 @@ const Home = () => {
             id: product.id,
             name: product.name,
             description: product.description,
-            price: `₹${product.price}`,
-            image: product.image_url, // This will be "/uploads/filename.jpg"
-            category: product.category_name || 'Uncategorized',
-            rating: 4.5 // You can add rating to your DB later
+            price: product.price,
+            image_url: product.image_url,
+            category_name: product.category_name || 'Uncategorized',
+            rating: 4.5
           }))
           setMenuItems(transformedItems)
         } else {
@@ -48,9 +50,21 @@ const Home = () => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((fav) => fav !== id) : [...prev, id]))
   }
 
+  const handleAddToCart = (item) => {
+    addToCart(item, 1)
+    
+    // Show "Added" feedback
+    setAddedToCart(prev => ({ ...prev, [item.id]: true }))
+    
+    // Reset after 2 seconds
+    setTimeout(() => {
+      setAddedToCart(prev => ({ ...prev, [item.id]: false }))
+    }, 2000)
+  }
+
   return (
     <div className="home">
-      {/* Hero Section - Keep as is */}
+      {/* Hero Section */}
       <section id="home" className="hero">
         <div className="hero-container">
           <div className="hero-content">
@@ -70,7 +84,12 @@ const Home = () => {
                 >
                   Explore Menu
                 </button>
-                <button className="btn-secondary">Order Online</button>
+                <button 
+                  className="btn-secondary"
+                  onClick={() => window.location.href = '/checkout'}
+                >
+                  Order Online
+                </button>
               </div>
               <div className="hero-stats">
                 <div className="stat">
@@ -106,7 +125,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Menu Section - Updated */}
+      {/* Menu Section */}
       <section id="menu" className="menu">
         <div className="menu-container">
           <div className="menu-header">
@@ -124,7 +143,7 @@ const Home = () => {
               <div key={item.id} className="menu-item">
                 <div className="item-image-container">
                   <img 
-                    src={item.image || "/placeholder.svg"} 
+                    src={item.image_url || "/placeholder.svg"} 
                     alt={item.name} 
                     className="item-image" 
                     onError={(e) => {
@@ -137,7 +156,7 @@ const Home = () => {
                   >
                     <Heart size={16} />
                   </button>
-                  <div className="item-category">{item.category}</div>
+                  <div className="item-category">{item.category_name}</div>
                 </div>
 
                 <div className="item-content">
@@ -152,10 +171,22 @@ const Home = () => {
                   <p className="item-description">{item.description}</p>
 
                   <div className="item-footer">
-                    <span className="item-price">{item.price}</span>
-                    <button className="add-to-cart-btn">
-                      <Plus size={16} />
-                      Add to Cart
+                    <span className="item-price">₹{item.price}</span>
+                    <button 
+                      className={`add-to-cart-btn ${addedToCart[item.id] ? 'added' : ''}`}
+                      onClick={() => handleAddToCart(item)}
+                    >
+                      {addedToCart[item.id] ? (
+                        <>
+                          <Check size={16} />
+                          Added!
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={16} />
+                          Add to Cart
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

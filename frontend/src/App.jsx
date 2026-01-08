@@ -8,6 +8,11 @@ import ContactUs from "./components/ContactUs"
 import Login from "./components/Login"
 import AdminDashboard from "./components/AdminDashboard"
 import ProductForm from "./components/ProductForm"
+import AdminOrders from "./components/AdminOrders"
+import Checkout from "./components/Checkout"
+import OrderTracking from "./components/OrderTracking"
+import OrderConfirmation from "./components/OrderConfirmation"
+import CustomerOrders from "./components/CustomerOrders"
 import "./App.css"
 
 function App() {
@@ -22,6 +27,12 @@ function App() {
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/login" element={<Login />} />
+
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/track-order" element={<OrderTracking />} />
+            <Route path="/track-order/:orderNumber" element={<OrderTracking />} />
+            <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmation />} />
             
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

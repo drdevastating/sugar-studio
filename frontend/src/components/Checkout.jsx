@@ -1,20 +1,16 @@
 // frontend/src/components/Checkout.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, MapPin, Clock, CreditCard, Check } from 'lucide-react';
+import { ShoppingCart, User, MapPin, Clock, Trash2, Plus, Minus, Check } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 import './styles/Checkout.css';
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Get cart items from localStorage (you can use context/redux instead)
-  const [cartItems] = useState(() => {
-    const saved = localStorage.getItem('cart');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -29,7 +25,7 @@ const Checkout = () => {
   });
 
   const calculateTotal = () => {
-    return cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return getCartTotal();
   };
 
   const handleInputChange = (e) => {
@@ -38,6 +34,17 @@ const Checkout = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleQuantityChange = (itemId, newQuantity) => {
+    if (newQuantity < 1) return;
+    updateQuantity(itemId, newQuantity);
+  };
+
+  const handleRemoveItem = (itemId) => {
+    if (window.confirm('Remove this item from cart?')) {
+      removeFromCart(itemId);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -79,7 +86,7 @@ const Checkout = () => {
 
       if (data.status === 'success') {
         // Clear cart
-        localStorage.removeItem('cart');
+        clearCart();
         
         // Navigate to order confirmation
         navigate(`/order-confirmation/${data.data.order_number}`);
@@ -298,7 +305,7 @@ const Checkout = () => {
                 ) : (
                   <>
                     <Check size={20} />
-                    Place Order (₹{calculateTotal().toFixed(2)})
+                    Place Order (₹{(calculateTotal() + (formData.order_type === 'delivery' ? 50 : 0)).toFixed(2)})
                   </>
                 )}
               </button>
@@ -309,14 +316,37 @@ const Checkout = () => {
           <div className="order-summary">
             <h2>Order Summary</h2>
             <div className="summary-items">
-              {cartItems.map((item, index) => (
-                <div key={index} className="summary-item">
+              {cartItems.map((item) => (
+                <div key={item.id} className="summary-item">
                   <img src={item.image || '/placeholder.svg'} alt={item.name} />
                   <div className="item-details">
                     <h4>{item.name}</h4>
-                    <p>Qty: {item.quantity}</p>
+                    <div className="quantity-controls">
+                      <button 
+                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                        className="qty-btn"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="quantity">{item.quantity}</span>
+                      <button 
+                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                        className="qty-btn"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <span className="item-price">₹{(item.price * item.quantity).toFixed(2)}</span>
+                  <div className="item-actions">
+                    <span className="item-price">₹{(item.price * item.quantity).toFixed(2)}</span>
+                    <button 
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="remove-btn"
+                      title="Remove item"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

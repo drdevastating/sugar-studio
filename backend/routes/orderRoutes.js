@@ -7,6 +7,7 @@ const { verifyToken, requireStaff } = require('../middleware/auth');
 // Public routes
 router.get('/track/:orderNumber', orderController.trackOrder);
 router.post('/', orderController.createOrder);
+router.get('/customer', orderController.getCustomerOrders);
 
 // Protected routes (staff only)
 router.get('/', verifyToken, requireStaff, orderController.getAllOrders);

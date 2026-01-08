@@ -419,6 +419,44 @@ const orderController = {
     }
   },
 
+  // ADD THIS: Get customer's own orders (public endpoint)
+getCustomerOrders: async (req, res) => {
+  try {
+    const { email } = req.query; // Or get from authenticated customer session
+    
+    if (!email) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Email is required'
+      });
+    }
+
+    const query = `
+      SELECT o.*, 
+             COUNT(oi.id) as item_count
+      FROM orders o
+      LEFT JOIN customers c ON o.customer_id = c.id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE c.email = $1
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `;
+    
+    const result = await pool.query(query, [email]);
+    
+    res.json({
+      status: 'success',
+      data: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch orders',
+      error: error.message
+    });
+  }
+},
   // Cancel order
   cancelOrder: async (req, res) => {
     const client = await pool.connect();

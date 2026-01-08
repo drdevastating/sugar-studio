@@ -3,17 +3,17 @@ import { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
+import { useCart } from "../context/CartContext"
 import logo from "../assets/logo.jpeg"
 import "./styles/Navbar.css"
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [cartItems, setCartItems] = useState(3) // Mock cart count
   const location = useLocation()
   const navigate = useNavigate()
-  // Get isStaff from useAuth hook
   const { user, isAuthenticated, isStaff, logout } = useAuth()
+  const { getCartCount } = useCart()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,7 +26,13 @@ const Navbar = () => {
 
   const scrollToSection = (sectionId) => {
     if (location.pathname !== "/") {
-      window.location.href = `/#${sectionId}`
+      navigate("/")
+      setTimeout(() => {
+        const element = document.getElementById(sectionId)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" })
+        }
+      }, 100)
     } else {
       const element = document.getElementById(sectionId)
       if (element) {
@@ -41,6 +47,8 @@ const Navbar = () => {
     navigate('/')
     setIsMobileMenuOpen(false)
   }
+
+  const cartCount = getCartCount()
 
   return (
     <nav className={`navbar ${isScrolled ? "scrolled" : ""}`}>
@@ -106,7 +114,7 @@ const Navbar = () => {
           <Link to="/checkout" className="action-btn cart-btn">
             <div className="cart-icon-wrapper">
               <ShoppingCart size={20} />
-              {cartItems > 0 && <span className="cart-badge">{cartItems}</span>}
+              {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
             </div>
             <span className="btn-text">Cart</span>
           </Link>
@@ -132,6 +140,9 @@ const Navbar = () => {
           </Link>
           <Link to="/contact" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
             Contact Us
+          </Link>
+          <Link to="/my-orders" className="nav-link">
+            My Orders
           </Link>
           <Link to="/track-order" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
             Track Order
@@ -166,7 +177,7 @@ const Navbar = () => {
             )}
             <Link to="/checkout" className="mobile-action-btn" onClick={() => setIsMobileMenuOpen(false)}>
               <ShoppingCart size={18} />
-              Cart ({cartItems})
+              Cart ({cartCount})
             </Link>
           </div>
         </div>
