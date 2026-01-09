@@ -1,13 +1,15 @@
 // backend/services/emailService.js
 const nodemailer = require('nodemailer');
 
-// Create transporter
+// Create transporter - FIXED to match your working test
 const createTransporter = () => {
   return nodemailer.createTransport({
-    service: 'gmail', // You can use other services like SendGrid, Mailgun, etc.
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // Use TLS
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_APP_PASSWORD // Use App Password for Gmail
+      pass: process.env.EMAIL_PASS // Changed from EMAIL_APP_PASSWORD to EMAIL_PASS
     }
   });
 };
@@ -59,7 +61,7 @@ const sendOrderConfirmation = async (order, customer) => {
           </div>
           
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-            Questions? Contact us at info@thesugarstudio.com or call (555) 123-CAKE
+            Questions? Contact us at ${process.env.EMAIL_USER} or call (555) 123-CAKE
           </p>
         </div>
         
@@ -73,10 +75,13 @@ const sendOrderConfirmation = async (order, customer) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log('Order confirmation email sent to:', customer.email);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Order confirmation email sent to:', customer.email);
+    console.log('📨 Message ID:', info.messageId);
+    return info;
   } catch (error) {
-    console.error('Error sending order confirmation email:', error);
+    console.error('❌ Error sending order confirmation email:', error);
+    throw error;
   }
 };
 
@@ -84,9 +89,11 @@ const sendOrderConfirmation = async (order, customer) => {
 const sendBakerNotification = async (order, customer) => {
   const transporter = createTransporter();
 
+  const bakerEmail = process.env.BAKER_EMAIL || process.env.EMAIL_USER;
+
   const mailOptions = {
     from: `"The Sugar Studio" <${process.env.EMAIL_USER}>`,
-    to: process.env.BAKER_EMAIL || process.env.EMAIL_USER,
+    to: bakerEmail,
     subject: `🔔 New Order Received - ${order.order_number}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -149,10 +156,13 @@ const sendBakerNotification = async (order, customer) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log('Baker notification email sent');
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Baker notification email sent to:', bakerEmail);
+    console.log('📨 Message ID:', info.messageId);
+    return info;
   } catch (error) {
-    console.error('Error sending baker notification email:', error);
+    console.error('❌ Error sending baker notification email:', error);
+    throw error;
   }
 };
 
@@ -232,7 +242,7 @@ const sendOrderStatusUpdate = async (order, customer, newStatus) => {
           </div>
           
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-            Questions? Contact us at info@thesugarstudio.com or call (555) 123-CAKE
+            Questions? Contact us at ${process.env.EMAIL_USER} or call (555) 123-CAKE
           </p>
         </div>
         
@@ -246,10 +256,13 @@ const sendOrderStatusUpdate = async (order, customer, newStatus) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log('Status update email sent to:', customer.email);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Status update email sent to:', customer.email);
+    console.log('📨 Message ID:', info.messageId);
+    return info;
   } catch (error) {
-    console.error('Error sending status update email:', error);
+    console.error('❌ Error sending status update email:', error);
+    throw error;
   }
 };
 
