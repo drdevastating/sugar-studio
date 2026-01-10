@@ -1,11 +1,12 @@
+/* frontend/src/components/styles/Home.css */
 .home {
-  padding-top: 80px;
+  padding-top: 70px;
 }
 
 /* Hero Section */
 .hero {
   min-height: 100vh;
-  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%);
+  background: #fef2f7;
   display: flex;
   align-items: center;
   position: relative;
@@ -19,8 +20,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ec4899' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
-    repeat;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d946a6' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
   pointer-events: none;
 }
 
@@ -53,10 +53,7 @@
 
 .highlight {
   display: block;
-  background: linear-gradient(135deg, #ec4899, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #d946a6;
   font-family: "Dancing Script", cursive;
   font-weight: 700;
 }
@@ -76,29 +73,29 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ec4899, #db2777);
+  background: #d946a6;
   color: white;
   border: none;
   padding: 1rem 2rem;
-  border-radius: 50px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
 }
 
 .btn-primary:hover {
+  background: #c026d3;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 4px 6px rgba(217, 70, 166, 0.3);
 }
 
 .btn-secondary {
   background: transparent;
-  color: #ec4899;
-  border: 2px solid #ec4899;
+  color: #d946a6;
+  border: 2px solid #d946a6;
   padding: 1rem 2rem;
-  border-radius: 50px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -106,7 +103,7 @@
 }
 
 .btn-secondary:hover {
-  background: #ec4899;
+  background: #d946a6;
   color: white;
   transform: translateY(-2px);
 }
@@ -125,7 +122,7 @@
 .stat-number {
   font-size: 2rem;
   font-weight: 800;
-  color: #ec4899;
+  color: #d946a6;
   line-height: 1;
 }
 
@@ -161,7 +158,7 @@
   padding: 1.5rem;
   border-radius: 15px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  border: 3px solid #ec4899;
+  border: 3px solid #d946a6;
 }
 
 .card-content {
@@ -172,7 +169,7 @@
 
 .card-title {
   font-weight: 700;
-  color: #ec4899;
+  color: #d946a6;
   font-size: 1.125rem;
 }
 
@@ -221,16 +218,16 @@
 
 .menu-item {
   background: white;
-  border-radius: 20px;
+  border-radius: 15px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   border: 1px solid #f3f4f6;
 }
 
 .menu-item:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.15);
+  box-shadow: 0 8px 16px rgba(217, 70, 166, 0.15);
 }
 
 .item-image-container {
@@ -269,7 +266,7 @@
 
 .favorite-btn:hover,
 .favorite-btn.active {
-  background: #ec4899;
+  background: #d946a6;
   color: white;
 }
 
@@ -277,10 +274,10 @@
   position: absolute;
   bottom: 1rem;
   left: 1rem;
-  background: rgba(236, 72, 153, 0.9);
+  background: rgba(217, 70, 166, 0.9);
   color: white;
   padding: 0.5rem 1rem;
-  border-radius: 20px;
+  border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -310,11 +307,11 @@
 }
 
 .error {
-  color: #e74c3c;
+  color: #dc2626;
 }
 
 .loading {
-  color: #3498db;
+  color: #6b7280;
 }
 
 .item-rating {
@@ -345,15 +342,15 @@
 .item-price {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #ec4899;
+  color: #d946a6;
 }
 
 .add-to-cart-btn {
-  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  background: #3b82f6;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 25px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -363,12 +360,17 @@
 }
 
 .add-to-cart-btn:hover {
+  background: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
 }
 
 .add-to-cart-btn.added {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: #10b981;
+}
+
+.add-to-cart-btn.added:hover {
+  background: #059669;
 }
 
 /* Mobile Responsive */

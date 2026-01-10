@@ -13,6 +13,7 @@ const AdminOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isStaff) {
@@ -24,18 +25,30 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
+      setError('');
       const url = statusFilter === 'all' 
         ? '/api/orders' 
         : `/api/orders?status=${statusFilter}`;
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       const data = await response.json();
       
+      console.log('Orders fetch response:', data); // Debug log
+      
       if (data.status === 'success') {
-        setOrders(data.data);
+        setOrders(data.data || []);
+      } else {
+        setError(data.message || 'Failed to fetch orders');
+        console.error('Failed to fetch orders:', data);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setError('Failed to connect to server');
     } finally {
       setLoading(false);
     }
@@ -43,14 +56,21 @@ const AdminOrders = () => {
 
   const fetchOrderDetails = async (orderId) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}`);
+      const response = await fetch(`/api/orders/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       
       if (data.status === 'success') {
         setSelectedOrder(data.data);
+      } else {
+        alert('Failed to fetch order details');
       }
     } catch (error) {
       console.error('Error fetching order details:', error);
+      alert('Failed to fetch order details');
     }
   };
 
@@ -81,7 +101,7 @@ const AdminOrders = () => {
 
         alert('Order status updated successfully! Customer has been notified via email.');
       } else {
-        alert('Failed to update order status');
+        alert('Failed to update order status: ' + data.message);
       }
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -125,7 +145,13 @@ const AdminOrders = () => {
   };
 
   if (loading) {
-    return <div className="admin-orders-page"><div className="loading">Loading orders...</div></div>;
+    return (
+      <div className="admin-orders-page">
+        <div className="orders-container">
+          <div className="loading">Loading orders...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -158,6 +184,18 @@ const AdminOrders = () => {
           </div>
         </div>
 
+        {error && (
+          <div className="error-message" style={{
+            background: '#fee2e2',
+            color: '#dc2626',
+            padding: '1rem',
+            borderRadius: '10px',
+            marginBottom: '1rem'
+          }}>
+            {error}
+          </div>
+        )}
+
         {/* Orders Grid */}
         <div className="orders-content">
           {/* Orders List */}
@@ -166,6 +204,22 @@ const AdminOrders = () => {
               <div className="no-orders">
                 <Package size={60} />
                 <p>No orders found</p>
+                {statusFilter !== 'all' && (
+                  <button 
+                    onClick={() => setStatusFilter('all')}
+                    style={{
+                      marginTop: '1rem',
+                      padding: '0.5rem 1rem',
+                      background: '#ec4899',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Show All Orders
+                  </button>
+                )}
               </div>
             ) : (
               orders.map(order => (

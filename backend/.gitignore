@@ -1,3 +1,4 @@
 .env
 uploads/
 hash-password.js
+testMailer.js

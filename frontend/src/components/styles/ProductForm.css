@@ -30,11 +30,13 @@
 }
 
 .back-btn:hover {
-  background: #f3f4f6;
+  background: #f9fafb;
+  border-color: #d946a6;
+  color: #d946a6;
 }
 
 .form-header h1 {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: #374151;
   margin-bottom: 0.5rem;
@@ -46,18 +48,19 @@
 
 .form-error {
   background: #fee2e2;
-  color: #dc2626;
+  color: #991b1b;
   padding: 1rem;
-  border-radius: 10px;
+  border-radius: 8px;
   margin-bottom: 1.5rem;
   font-weight: 500;
+  border: 1px solid #fecaca;
 }
 
 .product-form {
   background: white;
-  border-radius: 15px;
+  border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .form-section {
@@ -73,7 +76,7 @@
 }
 
 .form-section h3 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 600;
   color: #374151;
   margin-bottom: 1.5rem;
@@ -90,7 +93,7 @@
   height: 200px;
   border-radius: 12px;
   overflow: hidden;
-  border: 2px solid #f3f4f6;
+  border: 2px solid #e5e7eb;
 }
 
 .image-preview img {
@@ -111,19 +114,20 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #ec4899, #db2777);
+  background: #d946a6;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 10px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .upload-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+  background: #c026d3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(217, 70, 166, 0.3);
 }
 
 .upload-hint {
@@ -154,19 +158,18 @@
 .form-group select,
 .form-group textarea {
   padding: 0.75rem;
-  border: 2px solid #f3f4f6;
+  border: 2px solid #e5e7eb;
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: #fafafa;
+  background: white;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #ec4899;
-  background: white;
+  border-color: #d946a6;
 }
 
 .form-group textarea {
@@ -191,6 +194,7 @@
   width: 20px;
   height: 20px;
   cursor: pointer;
+  accent-color: #d946a6;
 }
 
 .field-hint {
@@ -214,7 +218,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  border-radius: 10px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -224,6 +228,7 @@
 .cancel-btn {
   background: #f3f4f6;
   color: #374151;
+  border: 1px solid #e5e7eb;
 }
 
 .cancel-btn:hover {
@@ -231,13 +236,14 @@
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: #10b981;
   color: white;
 }
 
 .save-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
 }
 
 .save-btn:disabled {
