@@ -9,6 +9,8 @@ const path = require('path');
 // Load environment variables
 dotenv.config();
 
+
+
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -17,6 +19,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const cartRoutes = require('./routes/cartRoutes');
+const recommendationRoutes = require('./routes/recommendationRoutes');
 
 // Import database connection
 const pool = require('./config/database');
@@ -65,6 +68,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -1,7 +1,7 @@
 // frontend/src/components/Checkout.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, MapPin, Clock, Trash2, Plus, Minus, Check } from 'lucide-react';
+import { ShoppingCart, User, MapPin, Clock, Trash2, Plus, Minus, Check, Gift } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './styles/Checkout.css';
 
@@ -22,6 +22,14 @@ const Checkout = () => {
     scheduled_time: '',
     payment_method: 'cod',
     notes: ''
+  });
+
+  const [customizations, setCustomizations] = useState({
+    message: '',
+    addBouquet: false,
+    bouquetType: 'roses',
+    addGreetingCard: false,
+    greetingCardMessage: ''
   });
 
   const calculateTotal = () => {
@@ -53,6 +61,11 @@ const Checkout = () => {
     setError('');
 
     try {
+      // Calculate customization costs
+      let customizationCost = 0;
+      if (customizations.addBouquet) customizationCost += 350;
+      if (customizations.addGreetingCard) customizationCost += 100;
+
       // Prepare order data
       const orderData = {
         customer: {
@@ -71,7 +84,19 @@ const Checkout = () => {
         scheduled_time: formData.scheduled_time || null,
         delivery_address: formData.order_type === 'delivery' ? formData.delivery_address : null,
         notes: formData.notes,
-        payment_method: formData.payment_method
+        payment_method: formData.payment_method,
+        customizations: {
+          cake_message: customizations.message,
+          bouquet: customizations.addBouquet ? {
+            type: customizations.bouquetType,
+            price: 350
+          } : null,
+          greeting_card: customizations.addGreetingCard ? {
+            message: customizations.greetingCardMessage,
+            price: 100
+          } : null,
+          total_customization_cost: customizationCost
+        }
       };
 
       const response = await fetch('/api/orders', {
@@ -249,6 +274,145 @@ const Checkout = () => {
                 )}
               </div>
 
+              {/* Customization Options */}
+              <div className="form-section">
+                <div className="section-header">
+                  <Gift size={24} />
+                  <h2>Customize Your Order</h2>
+                </div>
+                
+                {/* Check if cart has cakes/pastries */}
+                {cartItems.some(item => 
+                  item.name.toLowerCase().includes('cake') || 
+                  item.name.toLowerCase().includes('pastry')
+                ) && (
+                  <div className="form-group">
+                    <label htmlFor="cake_message">Message on Cake/Pastry</label>
+                    <input
+                      type="text"
+                      id="cake_message"
+                      value={customizations.message}
+                      onChange={(e) => setCustomizations({...customizations, message: e.target.value})}
+                      placeholder="e.g., Happy Birthday Sarah!"
+                      maxLength={50}
+                      style={{
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                      Max 50 characters
+                    </p>
+                  </div>
+                )}
+
+                {/* Add Bouquet */}
+                <div style={{
+                  padding: '1rem',
+                  background: '#fef2f7',
+                  borderRadius: '12px',
+                  border: '2px solid #fce7f3',
+                  marginBottom: '1rem'
+                }}>
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={customizations.addBouquet}
+                      onChange={(e) => setCustomizations({...customizations, addBouquet: e.target.checked})}
+                      style={{ width: '20px', height: '20px', accentColor: '#d946a6' }}
+                    />
+                    <span style={{ flex: 1 }}>Add Flower Bouquet (+₹350)</span>
+                    <span style={{ fontSize: '2rem' }}>💐</span>
+                  </label>
+                  
+                  {customizations.addBouquet && (
+                    <div style={{ marginTop: '1rem', paddingLeft: '2rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                        Choose Bouquet Type
+                      </label>
+                      <select
+                        value={customizations.bouquetType}
+                        onChange={(e) => setCustomizations({...customizations, bouquetType: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '1rem'
+                        }}
+                      >
+                        <option value="roses">Red Roses</option>
+                        <option value="mixed">Mixed Flowers</option>
+                        <option value="lilies">White Lilies</option>
+                        <option value="orchids">Orchids</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Add Greeting Card */}
+                <div style={{
+                  padding: '1rem',
+                  background: '#fef3c7',
+                  borderRadius: '12px',
+                  border: '2px solid #fde68a',
+                  marginBottom: '1rem'
+                }}>
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={customizations.addGreetingCard}
+                      onChange={(e) => setCustomizations({...customizations, addGreetingCard: e.target.checked})}
+                      style={{ width: '20px', height: '20px', accentColor: '#f59e0b' }}
+                    />
+                    <span style={{ flex: 1 }}>Add Greeting Card (+₹100)</span>
+                    <span style={{ fontSize: '2rem' }}>💌</span>
+                  </label>
+                  
+                  {customizations.addGreetingCard && (
+                    <div style={{ marginTop: '1rem', paddingLeft: '2rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                        Card Message
+                      </label>
+                      <textarea
+                        value={customizations.greetingCardMessage}
+                        onChange={(e) => setCustomizations({...customizations, greetingCardMessage: e.target.value})}
+                        placeholder="Write your heartfelt message..."
+                        rows={3}
+                        maxLength={200}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          resize: 'vertical'
+                        }}
+                      />
+                      <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                        Max 200 characters
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Schedule & Payment */}
               <div className="form-section">
                 <div className="section-header">
@@ -305,7 +469,12 @@ const Checkout = () => {
                 ) : (
                   <>
                     <Check size={20} />
-                    Place Order (₹{(calculateTotal() + (formData.order_type === 'delivery' ? 50 : 0)).toFixed(2)})
+                    Place Order (₹{(
+                      calculateTotal() + 
+                      (customizations.addBouquet ? 350 : 0) + 
+                      (customizations.addGreetingCard ? 100 : 0) +
+                      (formData.order_type === 'delivery' ? 50 : 0)
+                    ).toFixed(2)})
                   </>
                 )}
               </button>
@@ -355,13 +524,30 @@ const Checkout = () => {
                 <span>Subtotal</span>
                 <span>₹{calculateTotal().toFixed(2)}</span>
               </div>
+              {customizations.addBouquet && (
+                <div className="total-row">
+                  <span>Flower Bouquet</span>
+                  <span>₹350.00</span>
+                </div>
+              )}
+              {customizations.addGreetingCard && (
+                <div className="total-row">
+                  <span>Greeting Card</span>
+                  <span>₹100.00</span>
+                </div>
+              )}
               <div className="total-row">
                 <span>Delivery Fee</span>
                 <span>{formData.order_type === 'delivery' ? '₹50.00' : '₹0.00'}</span>
               </div>
               <div className="total-row final-total">
                 <span>Total</span>
-                <span>₹{(calculateTotal() + (formData.order_type === 'delivery' ? 50 : 0)).toFixed(2)}</span>
+                <span>₹{(
+                  calculateTotal() + 
+                  (customizations.addBouquet ? 350 : 0) + 
+                  (customizations.addGreetingCard ? 100 : 0) +
+                  (formData.order_type === 'delivery' ? 50 : 0)
+                ).toFixed(2)}</span>
               </div>
             </div>
           </div>

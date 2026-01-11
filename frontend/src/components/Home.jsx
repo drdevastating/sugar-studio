@@ -4,6 +4,8 @@ import { Star, Plus, Heart, Check } from "lucide-react"
 import { useCart } from "../context/CartContext"
 import logo from "../assets/logo.jpeg"
 import "./styles/Home.css"
+import RecommendedProducts from './RecommendedProducts';
+
 
 const Home = () => {
   const [favorites, setFavorites] = useState([])
@@ -12,6 +14,8 @@ const Home = () => {
   const [error, setError] = useState(null)
   const [addedToCart, setAddedToCart] = useState({})
   const { addToCart } = useCart()
+  const customer = JSON.parse(localStorage.getItem('customer') || 'null');
+
 
   // Fetch products from backend
   useEffect(() => {
@@ -195,6 +199,12 @@ const Home = () => {
           </div>
         </div>
       </section>
+      {customer && (
+        <RecommendedProducts 
+          customerId={customer.id}
+          onAddToCart={handleAddToCart}
+        />
+      )}
     </div>
   )
 }

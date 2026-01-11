@@ -1,0 +1,126 @@
+/* frontend/src/components/styles/OrderHistory.css */
+.order-history-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  width: 350px;
+  margin-top: 0.5rem;
+  max-height: 500px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 2px solid #f3f4f6;
+  color: #d946a6;
+}
+
+.history-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.history-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.history-item {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  position: relative;
+}
+
+.history-item:hover {
+  background: #fef2f7;
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.order-num {
+  font-weight: 700;
+  color: #374151;
+}
+
+.order-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.history-item-details {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.order-amount {
+  margin-left: auto;
+  font-weight: 700;
+  color: #d946a6;
+}
+
+.history-item-products {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.history-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #d1d5db;
+}
+
+.view-all-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #d946a6, #c026d3);
+  color: white;
+  border: none;
+  border-radius: 0 0 12px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-all-btn:hover {
+  background: linear-gradient(135deg, #c026d3, #a21caf);
+}
+
+@media (max-width: 768px) {
+  .recommendations-grid {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+  }
+
+  .order-history-dropdown {
+    width: 300px;
+  }
+
+  .name-inputs {
+    grid-template-columns: 1fr;
+  }
+}

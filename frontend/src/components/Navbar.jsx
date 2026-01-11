@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext"
 import { useCart } from "../context/CartContext"
 import logo from "../assets/logo.jpeg"
 import "./styles/Navbar.css"
+import OrderHistory from './OrderHistory';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -14,6 +15,8 @@ const Navbar = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, isStaff, logout } = useAuth()
   const { getCartCount } = useCart()
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const customer = JSON.parse(localStorage.getItem('customer') || 'null');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -180,6 +183,31 @@ const Navbar = () => {
               Cart ({cartCount})
             </Link>
           </div>
+          {customer && (
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setShowOrderHistory(!showOrderHistory)}
+                className="action-btn"
+              >
+                <Package size={20} />
+                <span className="btn-text">My Orders</span>
+              </button>
+              
+              {showOrderHistory && (
+                <OrderHistory 
+                  customerId={customer.id}
+                  onNavigateToOrder={(orderNum) => {
+                    if (orderNum) {
+                      navigate(`/track-order/${orderNum}`);
+                    } else {
+                      navigate('/my-orders');
+                    }
+                    setShowOrderHistory(false);
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
     </nav>

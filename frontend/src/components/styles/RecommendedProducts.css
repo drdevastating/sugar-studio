@@ -1,0 +1,129 @@
+.recommendations-section {
+  padding: 3rem 0;
+  background: linear-gradient(135deg, #fef2f7 0%, #fce7f3 100%);
+}
+
+.recommendations-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 0 2rem;
+}
+
+.recommendations-icon {
+  color: #d946a6;
+}
+
+.recommendations-header h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0;
+}
+
+.recommendations-header p {
+  color: #6b7280;
+  margin: 0;
+}
+
+.recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 0 2rem;
+}
+
+.recommendation-card {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(217, 70, 166, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  border: 2px solid #fce7f3;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(217, 70, 166, 0.2);
+}
+
+.recommendation-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: linear-gradient(135deg, #d946a6, #c026d3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 1;
+}
+
+.recommendation-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.recommendation-content {
+  padding: 1.5rem;
+}
+
+.recommendation-category {
+  display: inline-block;
+  background: #fef2f7;
+  color: #d946a6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.recommendation-content h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0.5rem 0;
+}
+
+.recommendation-reason {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.recommendation-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recommendation-price {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #d946a6;
+}
+
+.add-recommendation-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.add-recommendation-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
