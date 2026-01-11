@@ -1,13 +1,8 @@
+// backend/middleware/auth.js - Enhanced JWT verification
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
 
-const generateToken = (userId, role) => {
-  return jwt.sign(
-    { id: userId, role },
-    process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
-    { expiresIn: '30d' } // Longer expiry for customers
-  );
-};
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
 const verifyToken = async (req, res, next) => {
   try {
@@ -20,13 +15,24 @@ const verifyToken = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
+    // Verify JWT
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Check if session exists and is valid
+    const session = await pool.query(
+      'SELECT * FROM user_sessions WHERE token = $1 AND expires_at > NOW()',
+      [token]
     );
 
-    // Check if user is admin/staff or customer
-    if (decoded.role === 'customer') {
+    if (session.rows.length === 0) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Session expired or invalid'
+      });
+    }
+
+    // Get user or customer data
+    if (decoded.isCustomer) {
       const customerQuery = 'SELECT id, first_name, last_name, email, phone, is_active FROM customers WHERE id = $1';
       const result = await pool.query(customerQuery, [decoded.id]);
 
@@ -46,7 +52,7 @@ const verifyToken = async (req, res, next) => {
         });
       }
 
-      req.user = { ...customer, role: 'customer' };
+      req.user = { ...customer, role: 'customer', isCustomer: true };
     } else {
       const userQuery = 'SELECT id, email, full_name, role, is_active FROM users WHERE id = $1';
       const result = await pool.query(userQuery, [decoded.id]);
@@ -67,7 +73,7 @@ const verifyToken = async (req, res, next) => {
         });
       }
 
-      req.user = user;
+      req.user = { ...user, isCustomer: false };
     }
 
     next();
@@ -75,7 +81,8 @@ const verifyToken = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         status: 'error',
-        message: 'Token expired'
+        message: 'Token expired',
+        code: 'TOKEN_EXPIRED'
       });
     }
     
@@ -87,7 +94,7 @@ const verifyToken = async (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
+  if (req.user.isCustomer || req.user.role !== 'admin') {
     return res.status(403).json({
       status: 'error',
       message: 'Admin access required'
@@ -97,10 +104,26 @@ const requireAdmin = (req, res, next) => {
 };
 
 const requireStaff = (req, res, next) => {
+  if (req.user.isCustomer) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Staff access required'
+    });
+  }
   if (req.user.role !== 'admin' && req.user.role !== 'staff') {
     return res.status(403).json({
       status: 'error',
       message: 'Staff access required'
+    });
+  }
+  next();
+};
+
+const requireCustomer = (req, res, next) => {
+  if (!req.user.isCustomer) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Customer access required'
     });
   }
   next();
@@ -111,24 +134,21 @@ const optionalAuth = async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     
     if (token) {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
-      );
+      const decoded = jwt.verify(token, JWT_SECRET);
 
-      if (decoded.role === 'customer') {
+      if (decoded.isCustomer) {
         const customerQuery = 'SELECT id, first_name, last_name, email, phone, is_active FROM customers WHERE id = $1';
         const result = await pool.query(customerQuery, [decoded.id]);
 
         if (result.rows.length > 0 && result.rows[0].is_active) {
-          req.user = { ...result.rows[0], role: 'customer' };
+          req.user = { ...result.rows[0], role: 'customer', isCustomer: true };
         }
       } else {
         const userQuery = 'SELECT id, email, full_name, role, is_active FROM users WHERE id = $1';
         const result = await pool.query(userQuery, [decoded.id]);
 
         if (result.rows.length > 0 && result.rows[0].is_active) {
-          req.user = result.rows[0];
+          req.user = { ...result.rows[0], isCustomer: false };
         }
       }
     }
@@ -139,9 +159,9 @@ const optionalAuth = async (req, res, next) => {
 };
 
 module.exports = {
-  generateToken,
   verifyToken,
   requireAdmin,
   requireStaff,
+  requireCustomer,
   optionalAuth
 };

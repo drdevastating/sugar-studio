@@ -1,22 +1,17 @@
-// frontend/src/components/Navbar.jsx
+// frontend/src/components/Navbar.jsx - Updated
 import { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard } from "lucide-react"
-import { useAuth } from "../context/AuthContext"
+import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Package } from "lucide-react"
 import { useCart } from "../context/CartContext"
 import logo from "../assets/logo.jpeg"
 import "./styles/Navbar.css"
-import OrderHistory from './OrderHistory';
 
-const Navbar = () => {
+const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, isAuthenticated, isStaff, logout } = useAuth()
   const { getCartCount } = useCart()
-  const [showOrderHistory, setShowOrderHistory] = useState(false);
-  const customer = JSON.parse(localStorage.getItem('customer') || 'null');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,19 +41,20 @@ const Navbar = () => {
   }
 
   const handleLogout = () => {
-    logout()
-    navigate('/')
+    onLogout()
     setIsMobileMenuOpen(false)
   }
 
   const cartCount = getCartCount()
+  const isAuthenticated = customer || user
+  const isAdmin = user?.role === 'admin' || user?.role === 'staff'
 
   return (
     <nav className={`navbar ${isScrolled ? "scrolled" : ""}`}>
       <div className="navbar-container">
         {/* Logo */}
         <Link to="/" className="navbar-logo">
-          <img src={logo || "/placeholder.svg"} alt="The Sugar Studio" className="logo-image" />
+          <img src={logo} alt="The Sugar Studio" className="logo-image" />
           <div className="logo-text">
             <span className="studio-name">The Sugar Studio</span>
             <span className="studio-tagline">Homemade Dessert & Bakery</span>
@@ -82,7 +78,16 @@ const Navbar = () => {
           <Link to="/track-order" className="nav-link">
             Track Order
           </Link>
-          {isAuthenticated && isStaff && (
+          
+          {/* Customer-only links */}
+          {customer && (
+            <Link to="/my-orders" className="nav-link">
+              My Orders
+            </Link>
+          )}
+
+          {/* Admin-only links */}
+          {isAdmin && (
             <>
               <Link to="/admin/dashboard" className="nav-link admin-link">
                 <LayoutDashboard size={16} />
@@ -101,7 +106,7 @@ const Navbar = () => {
             <>
               <div className="user-info">
                 <User size={18} />
-                <span>{user?.full_name}</span>
+                <span>{customer ? `${customer.first_name} ${customer.last_name}` : user?.full_name}</span>
               </div>
               <button onClick={handleLogout} className="action-btn logout-action">
                 <LogOut size={20} />
@@ -109,11 +114,12 @@ const Navbar = () => {
               </button>
             </>
           ) : (
-            <Link to="/login" className="action-btn profile-btn">
+            <button onClick={onShowLogin} className="action-btn profile-btn">
               <User size={20} />
               <span className="btn-text">Login</span>
-            </Link>
+            </button>
           )}
+          
           <Link to="/checkout" className="action-btn cart-btn">
             <div className="cart-icon-wrapper">
               <ShoppingCart size={20} />
@@ -144,13 +150,18 @@ const Navbar = () => {
           <Link to="/contact" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
             Contact Us
           </Link>
-          <Link to="/my-orders" className="nav-link">
-            My Orders
-          </Link>
           <Link to="/track-order" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
             Track Order
           </Link>
-          {isAuthenticated && isStaff && (
+          
+          {customer && (
+            <Link to="/my-orders" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+              <Package size={16} />
+              My Orders
+            </Link>
+          )}
+
+          {isAdmin && (
             <>
               <Link to="/admin/dashboard" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
                 Dashboard
@@ -160,12 +171,13 @@ const Navbar = () => {
               </Link>
             </>
           )}
+
           <div className="mobile-actions">
             {isAuthenticated ? (
               <>
                 <div className="mobile-user-info">
                   <User size={16} />
-                  {user?.full_name}
+                  {customer ? `${customer.first_name} ${customer.last_name}` : user?.full_name}
                 </div>
                 <button onClick={handleLogout} className="mobile-action-btn logout-mobile">
                   <LogOut size={18} />
@@ -173,41 +185,16 @@ const Navbar = () => {
                 </button>
               </>
             ) : (
-              <Link to="/login" className="mobile-action-btn" onClick={() => setIsMobileMenuOpen(false)}>
+              <button onClick={() => { onShowLogin(); setIsMobileMenuOpen(false); }} className="mobile-action-btn">
                 <User size={18} />
                 Login
-              </Link>
+              </button>
             )}
             <Link to="/checkout" className="mobile-action-btn" onClick={() => setIsMobileMenuOpen(false)}>
               <ShoppingCart size={18} />
               Cart ({cartCount})
             </Link>
           </div>
-          {customer && (
-            <div style={{ position: 'relative' }}>
-              <button 
-                onClick={() => setShowOrderHistory(!showOrderHistory)}
-                className="action-btn"
-              >
-                <Package size={20} />
-                <span className="btn-text">My Orders</span>
-              </button>
-              
-              {showOrderHistory && (
-                <OrderHistory 
-                  customerId={customer.id}
-                  onNavigateToOrder={(orderNum) => {
-                    if (orderNum) {
-                      navigate(`/track-order/${orderNum}`);
-                    } else {
-                      navigate('/my-orders');
-                    }
-                    setShowOrderHistory(false);
-                  }}
-                />
-              )}
-            </div>
-          )}
         </div>
       )}
     </nav>
