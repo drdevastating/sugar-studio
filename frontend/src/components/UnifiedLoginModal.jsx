@@ -79,15 +79,57 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
   };
 
   const handleGoogleLogin = () => {
-    // Initialize Google Sign-In
-    if (window.google) {
+    setError('');
+    
+    // Check if Google script is loaded
+    if (!window.google) {
+      setError('Google Sign-In is loading. Please wait a moment and try again.');
+      return;
+    }
+
+    // Get client ID from environment variable
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
+      setError('Google Sign-In is not configured. Please add your Google Client ID.');
+      console.error('Google Client ID is missing. Add VITE_GOOGLE_CLIENT_ID to your .env file');
+      return;
+    }
+
+    try {
       window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
-        callback: handleGoogleCallback
+        client_id: clientId,
+        callback: handleGoogleCallback,
+        auto_select: false,
+        cancel_on_tap_outside: true
       });
-      window.google.accounts.id.prompt();
-    } else {
-      setError('Google Sign-In not loaded. Please refresh and try again.');
+      
+      // Try to show the One Tap prompt
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback: render button if One Tap doesn't show
+          const buttonDiv = document.getElementById('google-signin-button');
+          if (buttonDiv) {
+            buttonDiv.style.display = 'flex';
+            buttonDiv.style.justifyContent = 'center';
+            buttonDiv.style.marginTop = '1rem';
+            
+            window.google.accounts.id.renderButton(
+              buttonDiv,
+              { 
+                theme: "outline", 
+                size: "large",
+                width: 350,
+                text: "continue_with",
+                shape: "rectangular"
+              }
+            );
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Google Sign-In Error:', err);
+      setError('Failed to initialize Google Sign-In. Please try again.');
     }
   };
 
@@ -96,7 +138,7 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     setError('');
 
     try {
-      // Decode the JWT credential
+      // Decode the JWT credential to get user info
       const userObject = JSON.parse(atob(response.credential.split('.')[1]));
 
       const authResponse = await fetch('/api/auth/customer/google', {
@@ -122,6 +164,7 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
         setError(data.message);
       }
     } catch (err) {
+      console.error('Google authentication error:', err);
       setError('Google authentication failed');
     } finally {
       setLoading(false);
@@ -345,10 +388,13 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
               <p style={styles.subtitle}>Choose your preferred login method</p>
             </div>
 
+            {error && <div style={styles.error}>{error}</div>}
+
             <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
               <button 
                 style={{...styles.googleBtn, borderColor: '#4285f4'}} 
                 onClick={handleGoogleLogin}
+                disabled={loading}
               >
                 <svg width="20" height="20" viewBox="0 0 20 20">
                   <path fill="#4285F4" d="M19.6 10.23c0-.82-.1-1.42-.25-2.05H10v3.72h5.5c-.15.96-.74 2.31-2.04 3.22v2.45h3.16c1.89-1.73 2.98-4.3 2.98-7.34z"/>
@@ -356,8 +402,11 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
                   <path fill="#FBBC05" d="M3.99 10c0-.69.12-1.35.32-1.97V5.51H1.07A9.973 9.973 0 000 10c0 1.61.39 3.14 1.07 4.49l3.24-2.52c-.2-.62-.32-1.28-.32-1.97z"/>
                   <path fill="#EA4335" d="M10 3.88c1.88 0 3.13.81 3.85 1.48l2.84-2.76C14.96.99 12.7 0 10 0 6.09 0 2.72 2.25 1.07 5.51l3.24 2.52C5.12 5.62 7.36 3.88 10 3.88z"/>
                 </svg>
-                Continue with Google
+                {loading ? 'Loading...' : 'Continue with Google'}
               </button>
+
+              {/* Hidden div for Google button fallback */}
+              <div id="google-signin-button" style={{display: 'none'}}></div>
 
               <div style={styles.divider}>
                 <div style={{flex: 1, borderTop: '1px solid #e5e7eb'}}></div>
