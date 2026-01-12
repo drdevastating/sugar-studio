@@ -98,6 +98,45 @@
   color: #6b7280;
 }
 
+/* Not logged in state */
+.not-logged-in {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 15px;
+  max-width: 500px;
+  margin: 0 auto;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.not-logged-in h2 {
+  font-size: 1.75rem;
+  color: #374151;
+  margin: 1rem 0 0.5rem;
+}
+
+.not-logged-in p {
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.login-redirect-btn {
+  background: linear-gradient(135deg, #d946a6, #c026d3);
+  color: white;
+  border: none;
+  padding: 0.85rem 2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.login-redirect-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(217, 70, 166, 0.4);
+}
+
 .orders-list {
   display: grid;
   gap: 1.5rem;
