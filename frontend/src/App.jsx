@@ -1,6 +1,6 @@
-// frontend/src/App.jsx - Updated with JWT Auth
+// frontend/src/App.jsx - Fixed Admin Authentication Flow
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
@@ -29,11 +29,21 @@ function App() {
     const accessToken = localStorage.getItem('accessToken');
 
     if (savedCustomer && accessToken) {
-      setCustomer(JSON.parse(savedCustomer));
+      try {
+        setCustomer(JSON.parse(savedCustomer));
+      } catch (e) {
+        console.error('Error parsing customer:', e);
+        localStorage.removeItem('customer');
+      }
     }
 
     if (savedUser && accessToken) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error('Error parsing user:', e);
+        localStorage.removeItem('user');
+      }
     }
   }, []);
 
@@ -57,7 +67,6 @@ function App() {
           localStorage.setItem('accessToken', data.data.accessToken);
           localStorage.setItem('refreshToken', data.data.refreshToken);
         } else {
-          // Token refresh failed, logout
           handleLogout();
         }
       } catch (error) {
@@ -73,10 +82,15 @@ function App() {
   }, []);
 
   const handleLoginSuccess = (data, type) => {
+    console.log('Login success:', type, data);
+    
     if (type === 'customer') {
       setCustomer(data.customer);
+      setShowLogin(false);
     } else if (type === 'admin') {
       setUser(data.user);
+      setShowLogin(false);
+      // Navigate to dashboard will be handled by the Login component
     }
   };
 
@@ -105,6 +119,30 @@ function App() {
     localStorage.removeItem('refreshToken');
   };
 
+  // Protected Route Component
+  const ProtectedRoute = ({ children, requireAdmin = false }) => {
+    const accessToken = localStorage.getItem('accessToken');
+    const savedUser = localStorage.getItem('user');
+    
+    if (!accessToken || !savedUser) {
+      return <Navigate to="/login" replace />;
+    }
+
+    if (requireAdmin) {
+      try {
+        const userData = JSON.parse(savedUser);
+        if (userData.role !== 'admin' && userData.role !== 'staff') {
+          return <Navigate to="/" replace />;
+        }
+      } catch (e) {
+        console.error('Error parsing user for protected route:', e);
+        return <Navigate to="/login" replace />;
+      }
+    }
+
+    return children;
+  };
+
   return (
     <AuthProvider>
       <Router>
@@ -120,7 +158,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/track-order" element={<OrderTracking />} />
             <Route path="/track-order/:orderNumber" element={<OrderTracking />} />
@@ -128,11 +166,39 @@ function App() {
             <Route path="/customer/orders" element={<CustomerOrders customer={customer} />} />
             <Route path="/my-orders" element={<CustomerOrders customer={customer} />} />
             
-            {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/products/new" element={<ProductForm />} />
-            <Route path="/admin/products/edit/:id" element={<ProductForm />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
+            {/* Admin Routes - Protected */}
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/products/new" 
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <ProductForm />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/products/edit/:id" 
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <ProductForm />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/orders" 
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AdminOrders />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
           
           {showLogin && (

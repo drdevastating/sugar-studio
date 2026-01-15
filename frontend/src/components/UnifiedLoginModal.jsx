@@ -1,8 +1,8 @@
+// frontend/src/components/UnifiedLoginModal.jsx - Customer Only (Admin uses /login page)
 import { useState, useEffect, useRef } from 'react';
 import { X, User, Mail, LogIn, ArrowLeft } from 'lucide-react';
 
 const UnifiedLoginModal = ({ onClose, onSuccess }) => {
-  const [userType, setUserType] = useState(null);
   const [loginMethod, setLoginMethod] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,38 +27,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
       googleInitialized.current = false;
     };
   }, [loginMethod]);
-
-  const handleAdminLogin = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailData.email,
-          password: emailData.password
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        localStorage.setItem('accessToken', data.data.accessToken);
-        localStorage.setItem('refreshToken', data.data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-        onSuccess(data.data, 'admin');
-        onClose();
-      } else {
-        setError(data.message);
-      }
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCustomerEmailAuth = async () => {
     setLoading(true);
@@ -91,7 +59,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
   };
 
   const initializeGoogleButton = () => {
-    // Prevent multiple initializations
     if (googleInitialized.current || !googleButtonRef.current) {
       return;
     }
@@ -112,7 +79,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     try {
       googleInitialized.current = true;
 
-      // Initialize Google Identity Services
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: handleGoogleCallback,
@@ -120,10 +86,8 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
         cancel_on_tap_outside: false
       });
 
-      // Clear any existing content
       googleButtonRef.current.innerHTML = '';
 
-      // Render the button
       window.google.accounts.id.renderButton(
         googleButtonRef.current,
         { 
@@ -141,17 +105,15 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     }
   };
 
-  // Initialize Google button when loginMethod becomes 'google'
   useEffect(() => {
-    if (userType === 'customer' && loginMethod === null) {
-      // Small delay to ensure DOM is ready
+    if (!loginMethod) {
       const timer = setTimeout(() => {
         initializeGoogleButton();
       }, 100);
       
       return () => clearTimeout(timer);
     }
-  }, [userType, loginMethod]);
+  }, [loginMethod]);
 
   const handleGoogleCallback = async (response) => {
     setLoading(true);
@@ -191,7 +153,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
   };
 
   const resetForm = () => {
-    setUserType(null);
     setLoginMethod(null);
     setIsRegister(false);
     setError('');
@@ -249,23 +210,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     },
     subtitle: {
       color: '#6b7280'
-    },
-    userTypeButtons: {
-      display: 'grid',
-      gap: '1rem',
-      marginTop: '1.5rem'
-    },
-    userTypeBtn: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '1.5rem',
-      border: '2px solid #e5e7eb',
-      borderRadius: '12px',
-      background: 'white',
-      cursor: 'pointer',
-      transition: 'all 0.3s'
     },
     methodBtn: {
       display: 'flex',
@@ -356,48 +300,13 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
           <X size={24} />
         </button>
 
-        {/* Step 1: Select User Type */}
-        {!userType && (
+        {/* Customer Login - Choose Method */}
+        {!loginMethod && (
           <div>
             <div style={styles.header}>
               <LogIn size={48} style={{color: '#d946a6', margin: '0 auto 1rem'}} />
-              <h2 style={styles.title}>Welcome to Sugar Studio</h2>
-              <p style={styles.subtitle}>Please select how you'd like to continue</p>
-            </div>
-
-            <div style={styles.userTypeButtons}>
-              <button
-                style={{...styles.userTypeBtn, borderColor: '#d946a6'}}
-                onClick={() => setUserType('customer')}
-              >
-                <User size={32} color="#d946a6" />
-                <span style={{fontSize: '1.2rem', fontWeight: '600'}}>Customer Login</span>
-                <small style={{color: '#6b7280'}}>Place orders & track deliveries</small>
-              </button>
-
-              <button
-                style={{...styles.userTypeBtn, borderColor: '#3b82f6'}}
-                onClick={() => { setUserType('admin'); setLoginMethod('email'); }}
-              >
-                <LogIn size={32} color="#3b82f6" />
-                <span style={{fontSize: '1.2rem', fontWeight: '600'}}>Admin Login</span>
-                <small style={{color: '#6b7280'}}>Manage store & orders</small>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Customer - Select Login Method */}
-        {userType === 'customer' && !loginMethod && (
-          <div>
-            <button style={styles.backBtn} onClick={resetForm}>
-              <ArrowLeft size={20} />
-              Back
-            </button>
-            
-            <div style={styles.header}>
               <h2 style={styles.title}>Customer Login</h2>
-              <p style={styles.subtitle}>Choose your preferred login method</p>
+              <p style={styles.subtitle}>Sign in to your account</p>
             </div>
 
             {error && <div style={styles.error}>{error}</div>}
@@ -420,54 +329,20 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
                 <span>Email & Password</span>
               </button>
             </div>
-          </div>
-        )}
 
-        {/* Admin Login Form */}
-        {userType === 'admin' && (
-          <div>
-            <button style={styles.backBtn} onClick={resetForm}>
-              <ArrowLeft size={20} />
-              Back
-            </button>
-
-            <div style={styles.header}>
-              <h2 style={styles.title}>Admin Login</h2>
-              <p style={styles.subtitle}>Enter your credentials</p>
+            <div style={{textAlign: 'center', marginTop: '1.5rem', color: '#6b7280', fontSize: '0.9rem'}}>
+              <p>
+                Are you an admin?{' '}
+                <a href="/login" style={{color: '#d946a6', textDecoration: 'underline'}}>
+                  Admin Login
+                </a>
+              </p>
             </div>
-
-            {error && <div style={styles.error}>{error}</div>}
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Email</label>
-              <input
-                style={styles.input}
-                type="email"
-                value={emailData.email}
-                onChange={(e) => setEmailData({ ...emailData, email: e.target.value })}
-                placeholder="admin@example.com"
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Password</label>
-              <input
-                style={styles.input}
-                type="password"
-                value={emailData.password}
-                onChange={(e) => setEmailData({ ...emailData, password: e.target.value })}
-                placeholder="••••••••"
-              />
-            </div>
-
-            <button style={styles.submitBtn} onClick={handleAdminLogin} disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
           </div>
         )}
 
         {/* Customer Email Login/Register */}
-        {userType === 'customer' && loginMethod === 'email' && (
+        {loginMethod === 'email' && (
           <div>
             <button style={styles.backBtn} onClick={() => setLoginMethod(null)}>
               <ArrowLeft size={20} />

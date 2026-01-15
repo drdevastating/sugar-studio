@@ -1,4 +1,4 @@
-// frontend/src/components/Navbar.jsx - Updated
+// frontend/src/components/Navbar.jsx - Fixed to show proper user info
 import { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Package } from "lucide-react"
@@ -43,6 +43,7 @@ const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
   const handleLogout = () => {
     onLogout()
     setIsMobileMenuOpen(false)
+    navigate('/')
   }
 
   const cartCount = getCartCount()
@@ -63,38 +64,44 @@ const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
 
         {/* Desktop Navigation */}
         <div className="navbar-menu">
-          <button onClick={() => scrollToSection("home")} className="nav-link">
-            Home
-          </button>
-          <button onClick={() => scrollToSection("menu")} className="nav-link">
-            Menu
-          </button>
-          <Link to="/about" className="nav-link">
-            About Us
-          </Link>
-          <Link to="/contact" className="nav-link">
-            Contact Us
-          </Link>
-          <Link to="/track-order" className="nav-link">
-            Track Order
-          </Link>
-          
-          {/* Customer-only links */}
-          {customer && (
-            <Link to="/my-orders" className="nav-link">
-              My Orders
-            </Link>
-          )}
-
-          {/* Admin-only links */}
-          {isAdmin && (
+          {!isAdmin ? (
             <>
+              <button onClick={() => scrollToSection("home")} className="nav-link">
+                Home
+              </button>
+              <button onClick={() => scrollToSection("menu")} className="nav-link">
+                Menu
+              </button>
+              <Link to="/about" className="nav-link">
+                About Us
+              </Link>
+              <Link to="/contact" className="nav-link">
+                Contact Us
+              </Link>
+              <Link to="/track-order" className="nav-link">
+                Track Order
+              </Link>
+              
+              {/* Customer-only links */}
+              {customer && (
+                <Link to="/my-orders" className="nav-link">
+                  My Orders
+                </Link>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Admin-only links */}
               <Link to="/admin/dashboard" className="nav-link admin-link">
                 <LayoutDashboard size={16} />
                 Dashboard
               </Link>
               <Link to="/admin/orders" className="nav-link admin-link">
+                <Package size={16} />
                 Orders
+              </Link>
+              <Link to="/" className="nav-link">
+                View Store
               </Link>
             </>
           )}
@@ -106,7 +113,24 @@ const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
             <>
               <div className="user-info">
                 <User size={18} />
-                <span>{customer ? `${customer.first_name} ${customer.last_name}` : user?.full_name}</span>
+                <span>
+                  {customer 
+                    ? `${customer.first_name} ${customer.last_name}` 
+                    : user?.full_name}
+                </span>
+                {isAdmin && (
+                  <span style={{
+                    marginLeft: '0.5rem',
+                    padding: '0.25rem 0.5rem',
+                    background: '#3b82f6',
+                    color: 'white',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: '600'
+                  }}>
+                    {user?.role?.toUpperCase()}
+                  </span>
+                )}
               </div>
               <button onClick={handleLogout} className="action-btn logout-action">
                 <LogOut size={20} />
@@ -120,13 +144,16 @@ const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
             </button>
           )}
           
-          <Link to="/checkout" className="action-btn cart-btn">
-            <div className="cart-icon-wrapper">
-              <ShoppingCart size={20} />
-              {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-            </div>
-            <span className="btn-text">Cart</span>
-          </Link>
+          {/* Show cart only for customers and guests, not for admin */}
+          {!isAdmin && (
+            <Link to="/checkout" className="action-btn cart-btn">
+              <div className="cart-icon-wrapper">
+                <ShoppingCart size={20} />
+                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+              </div>
+              <span className="btn-text">Cart</span>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -138,36 +165,43 @@ const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="mobile-menu">
-          <button onClick={() => scrollToSection("home")} className="mobile-nav-link">
-            Home
-          </button>
-          <button onClick={() => scrollToSection("menu")} className="mobile-nav-link">
-            Menu
-          </button>
-          <Link to="/about" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-            About Us
-          </Link>
-          <Link to="/contact" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-            Contact Us
-          </Link>
-          <Link to="/track-order" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-            Track Order
-          </Link>
-          
-          {customer && (
-            <Link to="/my-orders" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-              <Package size={16} />
-              My Orders
-            </Link>
-          )}
-
-          {isAdmin && (
+          {!isAdmin ? (
+            <>
+              <button onClick={() => scrollToSection("home")} className="mobile-nav-link">
+                Home
+              </button>
+              <button onClick={() => scrollToSection("menu")} className="mobile-nav-link">
+                Menu
+              </button>
+              <Link to="/about" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                About Us
+              </Link>
+              <Link to="/contact" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                Contact Us
+              </Link>
+              <Link to="/track-order" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                Track Order
+              </Link>
+              
+              {customer && (
+                <Link to="/my-orders" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Package size={16} />
+                  My Orders
+                </Link>
+              )}
+            </>
+          ) : (
             <>
               <Link to="/admin/dashboard" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                <LayoutDashboard size={16} />
                 Dashboard
               </Link>
               <Link to="/admin/orders" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                <Package size={16} />
                 Orders
+              </Link>
+              <Link to="/" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                View Store
               </Link>
             </>
           )}
@@ -178,6 +212,18 @@ const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
                 <div className="mobile-user-info">
                   <User size={16} />
                   {customer ? `${customer.first_name} ${customer.last_name}` : user?.full_name}
+                  {isAdmin && (
+                    <span style={{
+                      marginLeft: '0.5rem',
+                      padding: '0.25rem 0.5rem',
+                      background: '#3b82f6',
+                      color: 'white',
+                      borderRadius: '4px',
+                      fontSize: '0.7rem'
+                    }}>
+                      {user?.role?.toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <button onClick={handleLogout} className="mobile-action-btn logout-mobile">
                   <LogOut size={18} />
@@ -190,10 +236,13 @@ const Navbar = ({ customer, user, onShowLogin, onLogout }) => {
                 Login
               </button>
             )}
-            <Link to="/checkout" className="mobile-action-btn" onClick={() => setIsMobileMenuOpen(false)}>
-              <ShoppingCart size={18} />
-              Cart ({cartCount})
-            </Link>
+            
+            {!isAdmin && (
+              <Link to="/checkout" className="mobile-action-btn" onClick={() => setIsMobileMenuOpen(false)}>
+                <ShoppingCart size={18} />
+                Cart ({cartCount})
+              </Link>
+            )}
           </div>
         </div>
       )}
