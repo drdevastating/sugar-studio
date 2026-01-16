@@ -1,4 +1,4 @@
-// frontend/src/App.jsx - Fixed Admin Authentication Flow
+// frontend/src/App.jsx - FIXED: No more flickering
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
@@ -21,8 +21,9 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [customer, setCustomer] = useState(null);
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Check for existing sessions on mount
+  // FIXED: Load auth state once on mount - no flickering
   useEffect(() => {
     const savedCustomer = localStorage.getItem('customer');
     const savedUser = localStorage.getItem('user');
@@ -45,9 +46,11 @@ function App() {
         localStorage.removeItem('user');
       }
     }
+
+    setAuthLoading(false);
   }, []);
 
-  // Refresh token mechanism
+  // Token refresh - only runs once per hour
   useEffect(() => {
     const refreshToken = async () => {
       const refreshTokenValue = localStorage.getItem('refreshToken');
@@ -71,13 +74,11 @@ function App() {
         }
       } catch (error) {
         console.error('Token refresh failed:', error);
-        handleLogout();
       }
     };
 
-    // Refresh token every 50 minutes (tokens expire in 1 hour)
+    // Refresh token every 50 minutes
     const interval = setInterval(refreshToken, 50 * 60 * 1000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -90,7 +91,6 @@ function App() {
     } else if (type === 'admin') {
       setUser(data.user);
       setShowLogin(false);
-      // Navigate to dashboard will be handled by the Login component
     }
   };
 
@@ -101,16 +101,13 @@ function App() {
       try {
         await fetch('/api/auth/logout', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
+          headers: { 'Authorization': `Bearer ${accessToken}` }
         });
       } catch (error) {
         console.error('Logout request failed:', error);
       }
     }
 
-    // Clear all auth data
     setCustomer(null);
     setUser(null);
     localStorage.removeItem('customer');
@@ -119,8 +116,8 @@ function App() {
     localStorage.removeItem('refreshToken');
   };
 
-  // Protected Route Component
-  const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  // FIXED: Simple protected route - checks once, no re-renders
+  const ProtectedRoute = ({ children }) => {
     const accessToken = localStorage.getItem('accessToken');
     const savedUser = localStorage.getItem('user');
     
@@ -128,20 +125,33 @@ function App() {
       return <Navigate to="/login" replace />;
     }
 
-    if (requireAdmin) {
-      try {
-        const userData = JSON.parse(savedUser);
-        if (userData.role !== 'admin' && userData.role !== 'staff') {
-          return <Navigate to="/" replace />;
-        }
-      } catch (e) {
-        console.error('Error parsing user for protected route:', e);
-        return <Navigate to="/login" replace />;
+    try {
+      const userData = JSON.parse(savedUser);
+      if (userData.role !== 'admin' && userData.role !== 'staff') {
+        return <Navigate to="/" replace />;
       }
+    } catch (e) {
+      console.error('Error parsing user for protected route:', e);
+      return <Navigate to="/login" replace />;
     }
 
     return children;
   };
+
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        fontSize: '1.2rem',
+        color: '#6b7280'
+      }}>
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <AuthProvider>
@@ -170,7 +180,7 @@ function App() {
             <Route 
               path="/admin/dashboard" 
               element={
-                <ProtectedRoute requireAdmin={true}>
+                <ProtectedRoute>
                   <AdminDashboard />
                 </ProtectedRoute>
               } 
@@ -178,7 +188,7 @@ function App() {
             <Route 
               path="/admin/products/new" 
               element={
-                <ProtectedRoute requireAdmin={true}>
+                <ProtectedRoute>
                   <ProductForm />
                 </ProtectedRoute>
               } 
@@ -186,7 +196,7 @@ function App() {
             <Route 
               path="/admin/products/edit/:id" 
               element={
-                <ProtectedRoute requireAdmin={true}>
+                <ProtectedRoute>
                   <ProductForm />
                 </ProtectedRoute>
               } 
@@ -194,7 +204,7 @@ function App() {
             <Route 
               path="/admin/orders" 
               element={
-                <ProtectedRoute requireAdmin={true}>
+                <ProtectedRoute>
                   <AdminOrders />
                 </ProtectedRoute>
               } 

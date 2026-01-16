@@ -1,7 +1,6 @@
-// frontend/src/components/AdminDashboard.jsx
+// frontend/src/components/AdminDashboard.jsx - FIXED: No flickering
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import {
   Package,
   ShoppingCart,
@@ -10,13 +9,11 @@ import {
   Plus,
   Edit2,
   Trash2,
-  LogOut,
-  Upload
+  LogOut
 } from 'lucide-react';
 import './styles/AdminDashboard.css';
 
 const AdminDashboard = () => {
-  const { user, logout, isStaff, token } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [stats, setStats] = useState({
@@ -27,15 +24,35 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  // FIXED: Only check auth once on mount
   useEffect(() => {
-    if (!isStaff) {
-      navigate('/login');
+    const accessToken = localStorage.getItem('accessToken');
+    const savedUser = localStorage.getItem('user');
+
+    if (!accessToken || !savedUser) {
+      navigate('/login', { replace: true });
       return;
     }
+
+    try {
+      const userData = JSON.parse(savedUser);
+      if (userData.role !== 'admin' && userData.role !== 'staff') {
+        navigate('/login', { replace: true });
+        return;
+      }
+    } catch (e) {
+      console.error('Error parsing user:', e);
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // All checks passed, fetch data
     fetchData();
-  }, [isStaff, navigate]);
+  }, []); // Only run once on mount
 
   const fetchData = async () => {
+    const token = localStorage.getItem('accessToken');
+
     try {
       // Fetch products
       const productsRes = await fetch('/api/products');
@@ -47,7 +64,9 @@ const AdminDashboard = () => {
       }
 
       // Fetch orders stats
-      const ordersRes = await fetch('/api/orders/stats');
+      const ordersRes = await fetch('/api/orders/stats', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const ordersData = await ordersRes.json();
       
       if (ordersData.status === 'success') {
@@ -59,7 +78,9 @@ const AdminDashboard = () => {
       }
 
       // Fetch customers count
-      const customersRes = await fetch('/api/customers');
+      const customersRes = await fetch('/api/customers', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const customersData = await customersRes.json();
       
       if (customersData.status === 'success') {
@@ -73,8 +94,11 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    localStorage.removeItem('customer');
+    localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate('/login', { replace: true });
   };
 
   const deleteProduct = async (id) => {
@@ -82,12 +106,12 @@ const AdminDashboard = () => {
       return;
     }
 
+    const token = localStorage.getItem('accessToken');
+
     try {
       const response = await fetch(`/api/products/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       const data = await response.json();
@@ -114,7 +138,7 @@ const AdminDashboard = () => {
       <div className="dashboard-header">
         <div>
           <h1>Admin Dashboard</h1>
-          <p>Welcome back, {user?.full_name}!</p>
+          <p>Welcome back, Administrator!</p>
         </div>
         <button onClick={handleLogout} className="logout-btn">
           <LogOut size={20} />
@@ -162,6 +186,30 @@ const AdminDashboard = () => {
             <h3>₹{parseFloat(stats.totalRevenue || 0).toFixed(2)}</h3>
             <p>Total Revenue</p>
           </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="dashboard-section">
+        <div className="section-header">
+          <h2>Quick Actions</h2>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+          <button 
+            className="add-btn" 
+            onClick={() => navigate('/admin/products/new')}
+          >
+            <Plus size={20} />
+            Add Product
+          </button>
+          <button 
+            className="add-btn" 
+            onClick={() => navigate('/admin/orders')}
+            style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}
+          >
+            <ShoppingCart size={20} />
+            View Orders
+          </button>
         </div>
       </div>
 

@@ -1,12 +1,10 @@
-// frontend/src/components/AdminOrders.jsx
+// frontend/src/components/AdminOrders.jsx - FIXED: Working order management
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Package, Filter, Eye, Check, X, Clock, Truck, CheckCircle } from 'lucide-react';
+import { Package, Filter, Eye, Check, X, ArrowLeft } from 'lucide-react';
 import './styles/AdminOrders.css';
 
 const AdminOrders = () => {
-  const { isStaff, token } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,15 +13,34 @@ const AdminOrders = () => {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
 
+  // FIXED: Only check auth once on mount
   useEffect(() => {
-    if (!isStaff) {
-      navigate('/login');
+    const accessToken = localStorage.getItem('accessToken');
+    const savedUser = localStorage.getItem('user');
+
+    if (!accessToken || !savedUser) {
+      navigate('/login', { replace: true });
       return;
     }
+
+    try {
+      const userData = JSON.parse(savedUser);
+      if (userData.role !== 'admin' && userData.role !== 'staff') {
+        navigate('/login', { replace: true });
+        return;
+      }
+    } catch (e) {
+      console.error('Error parsing user:', e);
+      navigate('/login', { replace: true });
+      return;
+    }
+
     fetchOrders();
-  }, [isStaff, navigate, statusFilter]);
+  }, [statusFilter]); // Re-fetch when filter changes
 
   const fetchOrders = async () => {
+    const token = localStorage.getItem('accessToken');
+    
     try {
       setError('');
       const url = statusFilter === 'all' 
@@ -31,14 +48,10 @@ const AdminOrders = () => {
         : `/api/orders?status=${statusFilter}`;
       
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       const data = await response.json();
-      
-      console.log('Orders fetch response:', data); // Debug log
       
       if (data.status === 'success') {
         setOrders(data.data || []);
@@ -55,11 +68,11 @@ const AdminOrders = () => {
   };
 
   const fetchOrderDetails = async (orderId) => {
+    const token = localStorage.getItem('accessToken');
+
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       
@@ -75,7 +88,9 @@ const AdminOrders = () => {
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
+    const token = localStorage.getItem('accessToken');
     setUpdating(true);
+
     try {
       const response = await fetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
@@ -89,23 +104,23 @@ const AdminOrders = () => {
       const data = await response.json();
 
       if (data.status === 'success') {
-        // Update the order in the list
+        // Update order in list
         setOrders(orders.map(order => 
           order.id === orderId ? { ...order, status: newStatus } : order
         ));
         
-        // Update selected order if it's open
+        // Update selected order
         if (selectedOrder && selectedOrder.id === orderId) {
           setSelectedOrder({ ...selectedOrder, status: newStatus });
         }
 
-        alert('Order status updated successfully! Customer has been notified via email.');
+        alert('✅ Order status updated successfully! Customer has been notified via email.');
       } else {
-        alert('Failed to update order status: ' + data.message);
+        alert('❌ Failed to update: ' + data.message);
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
-      alert('Error updating order status');
+      console.error('Error updating order:', error);
+      alert('❌ Error updating order status');
     } finally {
       setUpdating(false);
     }
@@ -160,6 +175,24 @@ const AdminOrders = () => {
         {/* Header */}
         <div className="orders-header">
           <div>
+            <button 
+              onClick={() => navigate('/admin/dashboard')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'white',
+                border: '1px solid #e5e7eb',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                marginBottom: '1rem',
+                color: '#374151'
+              }}
+            >
+              <ArrowLeft size={20} />
+              Back to Dashboard
+            </button>
             <h1>Order Management</h1>
             <p>Manage and track all customer orders</p>
           </div>
@@ -185,7 +218,7 @@ const AdminOrders = () => {
         </div>
 
         {error && (
-          <div className="error-message" style={{
+          <div style={{
             background: '#fee2e2',
             color: '#dc2626',
             padding: '1rem',
@@ -243,7 +276,6 @@ const AdminOrders = () => {
                       <span>{order.item_count} items</span>
                     </div>
                     <div className="order-info-item">
-                      <Clock size={16} />
                       <span>{formatDate(order.created_at)}</span>
                     </div>
                     <div className="order-info-item">
@@ -289,12 +321,14 @@ const AdminOrders = () => {
                     <div className="detail-item">
                       <span className="label">Status</span>
                       <span className={`value status-badge ${getStatusColor(selectedOrder.status)}`}>
-                        {selectedOrder.status.replace('_', ' ')}
+                        {selectedOrder.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
                     <div className="detail-item">
                       <span className="label">Order Type</span>
-                      <span className="value">{selectedOrder.order_type === 'pickup' ? '📦 Pickup' : '🚚 Delivery'}</span>
+                      <span className="value">
+                        {selectedOrder.order_type === 'pickup' ? '📦 Pickup' : '🚚 Delivery'}
+                      </span>
                     </div>
                     <div className="detail-item">
                       <span className="label">Payment Method</span>
