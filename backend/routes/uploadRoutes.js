@@ -1,7 +1,7 @@
-// backend/routes/uploadRoutes.js
+// backend/routes/uploadRoutes.js - UPDATED FOR CLOUDINARY
 const express = require('express');
 const router = express.Router();
-const { upload, handleUploadError } = require('../middleware/upload');
+const { upload, handleUploadError } = require('../config/cloudinary');
 const { verifyToken, requireStaff } = require('../middleware/auth');
 
 // POST /api/upload - Upload single image (staff only)
@@ -25,7 +25,7 @@ router.post(
         message: 'File uploaded successfully',
         data: {
           filename: req.file.filename,
-          path: `/uploads/${req.file.filename}`,
+          path: req.file.path, // Cloudinary URL
           size: req.file.size,
           mimetype: req.file.mimetype
         }
@@ -45,7 +45,7 @@ router.post(
   '/multiple',
   verifyToken,
   requireStaff,
-  upload.array('images', 5), // Max 5 images
+  upload.array('images', 5),
   handleUploadError,
   (req, res) => {
     try {
@@ -58,7 +58,7 @@ router.post(
 
       const files = req.files.map(file => ({
         filename: file.filename,
-        path: `/uploads/${file.filename}`,
+        path: file.path,
         size: file.size,
         mimetype: file.mimetype
       }));
