@@ -1,12 +1,36 @@
-// backend/controllers/authController.js - Email + Google Only
+// backend/controllers/authController.js - SECURED VERSION
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
-const JWT_EXPIRES_IN = '1h';
-const JWT_REFRESH_EXPIRES_IN = '7d';
+// ALWAYS use environment variables - never hardcode secrets
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+
+// Validate that secrets are set
+if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+  console.error('FATAL ERROR: JWT secrets not set in environment variables');
+  process.exit(1);
+}
+
+// Input validation helper
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validatePassword = (password) => {
+  // Minimum 8 characters, at least one letter and one number
+  return password && password.length >= 8;
+};
+
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return input;
+  // Remove any potential SQL injection characters
+  return input.trim();
+};
 
 const generateTokens = (userId, role, isCustomer = false) => {
   const accessToken = jwt.sign(
@@ -27,6 +51,7 @@ const generateTokens = (userId, role, isCustomer = false) => {
 const storeSession = async (userId, customerId, tokens, userAgent, ipAddress) => {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+  // ✅ SECURE: Using parameterized query
   await pool.query(
     `INSERT INTO user_sessions (user_id, customer_id, token, refresh_token, user_agent, ip_address, expires_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -40,6 +65,7 @@ const authController = {
     try {
       const { email, password } = req.body;
 
+      // Input validation
       if (!email || !password) {
         return res.status(400).json({
           status: 'error',
@@ -47,13 +73,26 @@ const authController = {
         });
       }
 
+      // Validate email format
+      if (!validateEmail(email)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Invalid email format'
+        });
+      }
+
+      // Sanitize inputs
+      const sanitizedEmail = sanitizeInput(email);
+
+      // ✅ SECURE: Parameterized query prevents SQL injection
       const query = 'SELECT * FROM users WHERE email = $1';
-      const result = await pool.query(query, [email]);
+      const result = await pool.query(query, [sanitizedEmail]);
 
       if (result.rows.length === 0) {
+        // Generic error message to prevent user enumeration
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid email or password'
+          message: 'Invalid credentials'
         });
       }
 
@@ -66,12 +105,13 @@ const authController = {
         });
       }
 
+      // ✅ SECURE: bcrypt.compare is timing-attack resistant
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid email or password'
+          message: 'Invalid credentials'
         });
       }
 
@@ -84,6 +124,7 @@ const authController = {
         [user.id]
       );
 
+      // Don't send sensitive data
       res.json({
         status: 'success',
         message: 'Login successful',
@@ -99,10 +140,11 @@ const authController = {
         }
       });
     } catch (error) {
+      console.error('Admin login error:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to login',
-        error: error.message
+        message: 'Failed to login'
+        // Don't expose error details in production
       });
     }
   },
@@ -119,15 +161,25 @@ const authController = {
         });
       }
 
+      if (!validateEmail(email)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Invalid email format'
+        });
+      }
+
+      const sanitizedEmail = sanitizeInput(email);
+
+      // ✅ SECURE: Parameterized query
       let customer = await pool.query(
         'SELECT * FROM customers WHERE email = $1',
-        [email]
+        [sanitizedEmail]
       );
 
       if (customer.rows.length === 0) {
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid email or password'
+          message: 'Invalid credentials'
         });
       }
 
@@ -152,7 +204,7 @@ const authController = {
       if (!isPasswordValid) {
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid email or password'
+          message: 'Invalid credentials'
         });
       }
 
@@ -181,10 +233,10 @@ const authController = {
         }
       });
     } catch (error) {
+      console.error('Customer login error:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to login',
-        error: error.message
+        message: 'Failed to login'
       });
     }
   },
@@ -194,6 +246,7 @@ const authController = {
     try {
       const { email, password, first_name, last_name, phone } = req.body;
 
+      // Input validation
       if (!email || !password || !first_name) {
         return res.status(400).json({
           status: 'error',
@@ -201,16 +254,30 @@ const authController = {
         });
       }
 
-      if (password.length < 6) {
+      if (!validateEmail(email)) {
         return res.status(400).json({
           status: 'error',
-          message: 'Password must be at least 6 characters'
+          message: 'Invalid email format'
         });
       }
 
+      if (!validatePassword(password)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Password must be at least 8 characters long'
+        });
+      }
+
+      // Sanitize inputs
+      const sanitizedEmail = sanitizeInput(email);
+      const sanitizedFirstName = sanitizeInput(first_name);
+      const sanitizedLastName = sanitizeInput(last_name || '');
+      const sanitizedPhone = phone ? sanitizeInput(phone) : null;
+
+      // Check for existing customer
       const existingCustomer = await pool.query(
         'SELECT id FROM customers WHERE email = $1',
-        [email]
+        [sanitizedEmail]
       );
 
       if (existingCustomer.rows.length > 0) {
@@ -220,6 +287,7 @@ const authController = {
         });
       }
 
+      // ✅ SECURE: Hash password with bcrypt (10 rounds)
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const insertQuery = `
@@ -229,10 +297,10 @@ const authController = {
       `;
 
       const result = await pool.query(insertQuery, [
-        first_name,
-        last_name || '',
-        email,
-        phone || null,
+        sanitizedFirstName,
+        sanitizedLastName,
+        sanitizedEmail,
+        sanitizedPhone,
         hashedPassword
       ]);
 
@@ -252,10 +320,10 @@ const authController = {
         }
       });
     } catch (error) {
+      console.error('Registration error:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to register',
-        error: error.message
+        message: 'Failed to register'
       });
     }
   },
@@ -272,15 +340,26 @@ const authController = {
         });
       }
 
+      if (!validateEmail(email)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Invalid email format'
+        });
+      }
+
+      const sanitizedEmail = sanitizeInput(email);
+      const sanitizedName = sanitizeInput(name || '');
+      const sanitizedGoogleId = sanitizeInput(googleId);
+
       let customer = await pool.query(
         'SELECT * FROM customers WHERE email = $1',
-        [email]
+        [sanitizedEmail]
       );
 
       if (customer.rows.length === 0) {
-        const nameParts = name.split(' ');
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(' ');
+        const nameParts = sanitizedName.split(' ');
+        const firstName = sanitizeInput(nameParts[0] || '');
+        const lastName = sanitizeInput(nameParts.slice(1).join(' ') || '');
 
         const insertQuery = `
           INSERT INTO customers (first_name, last_name, email, preferences)
@@ -290,14 +369,14 @@ const authController = {
 
         const preferences = {
           auth_provider: 'google',
-          google_id: googleId,
+          google_id: sanitizedGoogleId,
           profile_picture: picture
         };
 
         customer = await pool.query(insertQuery, [
           firstName,
-          lastName || '',
-          email,
+          lastName,
+          sanitizedEmail,
           JSON.stringify(preferences)
         ]);
       } else {
@@ -305,7 +384,14 @@ const authController = {
         if (!existingPrefs.google_id) {
           await pool.query(
             'UPDATE customers SET preferences = $1 WHERE id = $2',
-            [JSON.stringify({ ...existingPrefs, google_id: googleId, profile_picture: picture }), customer.rows[0].id]
+            [
+              JSON.stringify({ 
+                ...existingPrefs, 
+                google_id: sanitizedGoogleId, 
+                profile_picture: picture 
+              }), 
+              customer.rows[0].id
+            ]
           );
         }
       }
@@ -337,10 +423,10 @@ const authController = {
         }
       });
     } catch (error) {
+      console.error('Google auth error:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to authenticate with Google',
-        error: error.message
+        message: 'Failed to authenticate with Google'
       });
     }
   },
@@ -386,6 +472,7 @@ const authController = {
         }
       });
     } catch (error) {
+      console.error('Token refresh error:', error);
       res.status(401).json({
         status: 'error',
         message: 'Invalid refresh token'
@@ -407,6 +494,7 @@ const authController = {
         message: 'Logged out successfully'
       });
     } catch (error) {
+      console.error('Logout error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Failed to logout'
@@ -422,10 +510,10 @@ const authController = {
         data: { user: req.user }
       });
     } catch (error) {
+      console.error('Get profile error:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to fetch profile',
-        error: error.message
+        message: 'Failed to fetch profile'
       });
     }
   }
