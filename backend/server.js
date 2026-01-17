@@ -196,6 +196,13 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Backend is running 🚀'
+  });
+});
+
 const server = app.listen(PORT, () => {
   console.log('='.repeat(50));
   console.log('🚀 Sugar Studio Server Started');
