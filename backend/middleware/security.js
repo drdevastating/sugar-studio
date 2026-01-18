@@ -1,10 +1,11 @@
-// backend/middleware/security.js - Comprehensive Security Middleware
+// backend/middleware/security.js - FIXED to allow Google OAuth
+// Place this file at: backend/middleware/security.js
 const rateLimit = require('express-rate-limit');
 
 // Rate limiting for login attempts
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: {
     status: 'error',
     message: 'Too many login attempts. Please try again after 15 minutes.'
@@ -13,35 +14,31 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiting for registration
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // 3 registrations per hour per IP
+  windowMs: 60 * 60 * 1000,
+  max: 3,
   message: {
     status: 'error',
     message: 'Too many accounts created. Please try again after an hour.'
   }
 });
 
-// General API rate limiter
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: {
     status: 'error',
     message: 'Too many requests. Please try again later.'
   }
 });
 
-// Input sanitization middleware
 const sanitizeInput = (req, res, next) => {
   const sanitize = (obj) => {
     if (typeof obj === 'string') {
-      // Remove potential XSS characters
       return obj
         .trim()
-        .replace(/[<>]/g, '') // Remove < and >
-        .substring(0, 1000); // Limit length
+        .replace(/[<>]/g, '')
+        .substring(0, 1000);
     }
     if (typeof obj === 'object' && obj !== null) {
       Object.keys(obj).forEach(key => {
@@ -64,7 +61,6 @@ const sanitizeInput = (req, res, next) => {
   next();
 };
 
-// Validate content type for POST/PUT requests
 const validateContentType = (req, res, next) => {
   if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
     const contentType = req.get('Content-Type');
@@ -80,13 +76,11 @@ const validateContentType = (req, res, next) => {
   next();
 };
 
-// Prevent parameter pollution
 const preventParamPollution = (req, res, next) => {
   const checkPollution = (obj) => {
     if (obj && typeof obj === 'object') {
       Object.keys(obj).forEach(key => {
         if (Array.isArray(obj[key]) && obj[key].length > 1) {
-          // Keep only the first value if array detected (potential pollution)
           obj[key] = obj[key][0];
         }
       });
@@ -98,27 +92,15 @@ const preventParamPollution = (req, res, next) => {
   next();
 };
 
-// Security headers middleware
 const securityHeaders = (req, res, next) => {
-  // Prevent clickjacking
   res.setHeader('X-Frame-Options', 'DENY');
-  
-  // Prevent MIME type sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  
-  // Enable XSS protection
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  
-  // Referrer policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
-  // Remove powered by header
   res.removeHeader('X-Powered-By');
-  
   next();
 };
 
-// Request size limiter
 const requestSizeLimiter = (maxSize = '10mb') => {
   return (req, res, next) => {
     const contentLength = req.get('content-length');
@@ -136,10 +118,24 @@ const requestSizeLimiter = (maxSize = '10mb') => {
   };
 };
 
-// SQL injection detection (additional layer)
+// FIXED: Updated to exclude Google OAuth routes and allow JWT tokens
 const sqlInjectionDetector = (req, res, next) => {
+  // Skip SQL injection check for Google OAuth endpoint
+  if (req.path === '/api/auth/customer/google') {
+    return next();
+  }
+
   const detectSQLInjection = (str) => {
     if (typeof str !== 'string') return false;
+    
+    // Don't flag JWT tokens or base64 encoded strings
+    if (str.match(/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/)) {
+      return false; // This is likely a JWT token
+    }
+    
+    if (str.match(/^[A-Za-z0-9+/=]+$/)) {
+      return false; // This is likely base64
+    }
     
     const sqlPatterns = [
       /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b)/i,
@@ -160,6 +156,10 @@ const sqlInjectionDetector = (req, res, next) => {
       }
     } else if (typeof obj === 'object' && obj !== null) {
       for (let key in obj) {
+        // Skip checking certain fields that might contain tokens
+        if (key === 'googleId' || key === 'picture' || key === 'credential') {
+          continue;
+        }
         if (checkObject(obj[key])) {
           return true;
         }
@@ -178,14 +178,14 @@ const sqlInjectionDetector = (req, res, next) => {
   next();
 };
 
-// CORS configuration
 const configureCORS = () => {
   const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [
         process.env.FRONTEND_URL,
-        'https://sugar-studio.vercel.app'  // Add your Vercel domain
-      ]
-    : ['http://localhost:5173', 'http://localhost:3000'];
+        'https://sugar-studio.vercel.app',
+        'https://accounts.google.com' // Allow Google OAuth
+      ].filter(Boolean)
+    : ['http://localhost:5173', 'http://localhost:3000', 'https://accounts.google.com'];
 
   return {
     origin: (origin, callback) => {
