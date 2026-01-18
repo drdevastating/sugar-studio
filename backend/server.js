@@ -1,4 +1,4 @@
-// backend/server.js - SECURED VERSION
+// backend/server.js - FIXED FOR PRODUCTION
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -15,7 +15,7 @@ const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
   console.error('❌ FATAL ERROR: Missing required environment variables:', missingEnvVars.join(', '));
-  console.error('Please check your .env file');
+  console.error('Please check your environment variables');
   process.exit(1);
 }
 
@@ -30,7 +30,6 @@ const {
   securityHeaders,
   requestSizeLimiter,
   sqlInjectionDetector,
-  configureCORS
 } = require('./middleware/security');
 
 // Import routes
@@ -60,7 +59,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://accounts.google.com"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
+      imgSrc: ["'self'", "data:", "https:", "http:", "https://res.cloudinary.com"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
@@ -74,14 +73,39 @@ app.use(helmet({
 
 app.use(securityHeaders);
 
-// 2. CORS - Properly configured
-app.use(cors(configureCORS()));
+// 2. CORS - FIXED for production
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://sugar-studio.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+].filter(Boolean); // Remove undefined values
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin: ' + origin;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // 3. Request logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
-  app.use(morgan('combined')); // Use proper logging in production
+  app.use(morgan('combined'));
 }
 
 // 4. Request size limits
@@ -97,9 +121,6 @@ app.use(validateContentType);
 
 // 6. General API rate limiting
 app.use('/api', apiLimiter);
-
-// Static files (for uploaded images, etc.)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============================================
 // ROOT ROUTES
@@ -137,11 +158,13 @@ app.get('/health', async (req, res) => {
       uptime: process.uptime()
     });
   } catch (error) {
+    console.error('Health check failed:', error);
     res.status(503).json({
       status: 'error',
       message: 'Service unavailable',
       database: 'disconnected',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -196,21 +219,14 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================
 
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Backend is running 🚀'
-  });
-});
-
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('='.repeat(50));
   console.log('🚀 Sugar Studio Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📍 Server: http://localhost:${PORT}`);
   console.log(`📍 API Base: http://localhost:${PORT}/api`);
-  console.log(`📁 Static Files: ${path.join(__dirname, 'uploads')}`);
+  console.log(`📍 Allowed Origins:`, allowedOrigins);
   console.log('='.repeat(50));
   console.log('✅ Security Features:');
   console.log('  - Rate limiting enabled');
@@ -262,4 +278,4 @@ process.on('uncaughtException', (err) => {
   gracefulShutdown('Uncaught Exception');
 });
 
-module.exports = app; // For testing purposes
+module.exports = app;

@@ -1,26 +1,37 @@
-// backend/config/database.js - FIXED FOR NEON
+// backend/config/database.js - FIXED FOR NEON WITH PROPER SSL
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
+// Use DB_URL if provided, otherwise construct from individual variables
+const connectionConfig = process.env.DB_URL 
+  ? {
+      connectionString: process.env.DB_URL,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    }
+  : {
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 5432,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    };
+
+// Add connection pool settings
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'bakery_db',
-  password: process.env.DB_PASSWORD || 'password',
-  port: process.env.DB_PORT || 5432,
-  // Critical for Neon PostgreSQL
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false
-  } : false,
-  // Connection pool settings for Neon
+  ...connectionConfig,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
 });
 
-// Test connection
+// Connection event handlers
 pool.on('connect', () => {
   console.log('✅ Connected to PostgreSQL database');
 });
@@ -33,6 +44,13 @@ pool.on('error', (err) => {
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error('❌ Database connection test failed:', err);
+    console.error('Connection config:', {
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      port: process.env.DB_PORT,
+      ssl: 'enabled'
+    });
   } else {
     console.log('✅ Database connection test successful:', res.rows[0]);
   }
