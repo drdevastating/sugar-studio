@@ -1,7 +1,7 @@
-// frontend/src/components/UnifiedLoginModal.jsx - FIXED for production
+// frontend/src/components/UnifiedLoginModal.jsx - FIXED for Production Google Auth
 import { useState, useEffect, useRef } from 'react';
 import { X, User, Mail, LogIn, ArrowLeft } from 'lucide-react';
-import { getApiUrl } from '../config/api';  // ✅ ADD THIS
+import { getApiUrl } from '../config/api';
 
 const UnifiedLoginModal = ({ onClose, onSuccess }) => {
   const [loginMethod, setLoginMethod] = useState(null);
@@ -19,6 +19,7 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     phone: ''
   });
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (googleButtonRef.current) {
@@ -26,7 +27,7 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
       }
       googleInitialized.current = false;
     };
-  }, [loginMethod]);
+  }, []);
 
   const handleCustomerEmailAuth = async () => {
     setLoading(true);
@@ -34,7 +35,7 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
 
     try {
       const endpoint = isRegister ? '/api/auth/customer/register' : '/api/auth/customer/login';
-      const response = await fetch(getApiUrl(endpoint), {  // ✅ FIXED
+      const response = await fetch(getApiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailData)
@@ -52,77 +53,24 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
         setError(data.message);
       }
     } catch (err) {
+      console.error('Email auth error:', err);
       setError('Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const initializeGoogleButton = () => {
-    if (googleInitialized.current || !googleButtonRef.current) {
-      return;
-    }
-
-    if (!window.google) {
-      setError('Google Sign-In is loading. Please wait and try again.');
-      return;
-    }
-
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    
-    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
-      setError('Google Sign-In is not configured.');
-      console.error('Google Client ID is missing. Add VITE_GOOGLE_CLIENT_ID to your .env file');
-      return;
-    }
-
-    try {
-      googleInitialized.current = true;
-
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleCallback,
-        auto_select: false,
-        cancel_on_tap_outside: false
-      });
-
-      googleButtonRef.current.innerHTML = '';
-
-      window.google.accounts.id.renderButton(
-        googleButtonRef.current,
-        { 
-          theme: "outline", 
-          size: "large",
-          width: 350,
-          text: "continue_with",
-          shape: "rectangular"
-        }
-      );
-    } catch (err) {
-      console.error('Google Sign-In Error:', err);
-      setError('Failed to initialize Google Sign-In.');
-      googleInitialized.current = false;
-    }
-  };
-
-  useEffect(() => {
-    if (!loginMethod) {
-      const timer = setTimeout(() => {
-        initializeGoogleButton();
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [loginMethod]);
-
   const handleGoogleCallback = async (response) => {
+    console.log('🔵 Google callback triggered');
     setLoading(true);
     setError('');
 
     try {
+      // Decode JWT token to get user info
       const userObject = JSON.parse(atob(response.credential.split('.')[1]));
+      console.log('📧 User email:', userObject.email);
 
-      const authResponse = await fetch(getApiUrl('/api/auth/customer/google'), {  // ✅ FIXED
+      const authResponse = await fetch(getApiUrl('/api/auth/customer/google'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,23 +82,108 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
       });
 
       const data = await authResponse.json();
+      console.log('✅ Backend response:', data);
 
       if (data.status === 'success') {
+        // Store auth data
         localStorage.setItem('accessToken', data.data.accessToken);
         localStorage.setItem('refreshToken', data.data.refreshToken);
         localStorage.setItem('customer', JSON.stringify(data.data.customer));
+        
+        console.log('✅ Auth data stored, calling onSuccess');
+        
+        // Call success callback
         onSuccess(data.data, 'customer');
+        
+        // Close modal
         onClose();
       } else {
-        setError(data.message);
+        console.error('❌ Backend error:', data.message);
+        setError(data.message || 'Authentication failed');
       }
     } catch (err) {
-      console.error('Google authentication error:', err);
-      setError('Google authentication failed');
+      console.error('❌ Google authentication error:', err);
+      setError('Google authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  const initializeGoogleButton = () => {
+    if (googleInitialized.current || !googleButtonRef.current) {
+      console.log('⚠️ Google already initialized or ref not ready');
+      return;
+    }
+
+    if (!window.google) {
+      console.log('⚠️ Google SDK not loaded yet');
+      setError('Google Sign-In is loading. Please wait...');
+      
+      // Retry after 1 second
+      setTimeout(() => {
+        if (window.google && !googleInitialized.current) {
+          initializeGoogleButton();
+        }
+      }, 1000);
+      return;
+    }
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    console.log('🔑 Client ID:', clientId ? '✅ Set' : '❌ Missing');
+
+    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
+      setError('Google Sign-In is not configured. Please contact support.');
+      console.error('❌ VITE_GOOGLE_CLIENT_ID is missing in environment variables');
+      return;
+    }
+
+    try {
+      console.log('🔧 Initializing Google Sign-In...');
+      googleInitialized.current = true;
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCallback,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        ux_mode: 'popup' // Use popup mode for better reliability
+      });
+
+      // Clear any existing content
+      googleButtonRef.current.innerHTML = '';
+
+      window.google.accounts.id.renderButton(
+        googleButtonRef.current,
+        { 
+          theme: "outline", 
+          size: "large",
+          width: 350,
+          text: "continue_with",
+          shape: "rectangular",
+          logo_alignment: "left"
+        }
+      );
+
+      console.log('✅ Google button rendered successfully');
+    } catch (err) {
+      console.error('❌ Google Sign-In initialization error:', err);
+      setError('Failed to initialize Google Sign-In. Please refresh and try again.');
+      googleInitialized.current = false;
+    }
+  };
+
+  // Initialize Google button when modal opens
+  useEffect(() => {
+    if (!loginMethod && googleButtonRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        initializeGoogleButton();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loginMethod]);
 
   const resetForm = () => {
     setLoginMethod(null);
@@ -289,7 +322,16 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     googleButtonContainer: {
       display: 'flex',
       justifyContent: 'center',
-      margin: '1rem 0'
+      margin: '1rem 0',
+      minHeight: '44px' // Reserve space for button
+    },
+    debugInfo: {
+      background: '#f3f4f6',
+      padding: '0.5rem',
+      borderRadius: '6px',
+      fontSize: '0.75rem',
+      color: '#6b7280',
+      marginTop: '1rem'
     }
   };
 
@@ -315,6 +357,15 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
                 ref={googleButtonRef}
                 style={styles.googleButtonContainer}
               />
+
+              {/* Debug info - remove in production */}
+              {import.meta.env.DEV && (
+                <div style={styles.debugInfo}>
+                  Client ID: {import.meta.env.VITE_GOOGLE_CLIENT_ID ? '✅ Set' : '❌ Not set'}<br/>
+                  Google SDK: {window.google ? '✅ Loaded' : '❌ Not loaded'}<br/>
+                  Initialized: {googleInitialized.current ? '✅ Yes' : '❌ No'}
+                </div>
+              )}
 
               <div style={styles.divider}>
                 <div style={{flex: 1, borderTop: '1px solid #e5e7eb'}}></div>
