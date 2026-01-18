@@ -1,14 +1,22 @@
-// backend/config/cloudinary.js
+// backend/config/cloudinary.js - FIXED
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
+// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Test Cloudinary connection
+console.log('📸 Cloudinary Config:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY ? '***' + process.env.CLOUDINARY_API_KEY.slice(-4) : 'NOT SET'
+});
+
+// Create Cloudinary storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -18,6 +26,7 @@ const storage = new CloudinaryStorage({
   }
 });
 
+// Create multer upload instance
 const upload = multer({
   storage: storage,
   limits: {
@@ -25,6 +34,7 @@ const upload = multer({
   }
 });
 
+// Error handler for multer
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
