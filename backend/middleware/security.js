@@ -181,12 +181,14 @@ const sqlInjectionDetector = (req, res, next) => {
 // CORS configuration
 const configureCORS = () => {
   const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL]
+    ? [
+        process.env.FRONTEND_URL,
+        'https://sugar-studio.vercel.app'  // Add your Vercel domain
+      ]
     : ['http://localhost:5173', 'http://localhost:3000'];
 
   return {
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
       if (allowedOrigins.indexOf(origin) === -1) {

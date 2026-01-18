@@ -1,8 +1,9 @@
-// frontend/src/components/Checkout.jsx
+// frontend/src/components/Checkout.jsx - FIXED for production
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, MapPin, Clock, Trash2, Plus, Minus, Check, Gift } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { getApiUrl } from '../config/api';  // ✅ ADD THIS
 import './styles/Checkout.css';
 
 const Checkout = () => {
@@ -61,12 +62,10 @@ const Checkout = () => {
     setError('');
 
     try {
-      // Calculate customization costs
       let customizationCost = 0;
       if (customizations.addBouquet) customizationCost += 350;
       if (customizations.addGreetingCard) customizationCost += 100;
 
-      // Prepare order data
       const orderData = {
         customer: {
           first_name: formData.first_name,
@@ -99,7 +98,7 @@ const Checkout = () => {
         }
       };
 
-      const response = await fetch('/api/orders', {
+      const response = await fetch(getApiUrl('/api/orders'), {  // ✅ FIXED
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -110,10 +109,7 @@ const Checkout = () => {
       const data = await response.json();
 
       if (data.status === 'success') {
-        // Clear cart
         clearCart();
-        
-        // Navigate to order confirmation
         navigate(`/order-confirmation/${data.data.order_number}`);
       } else {
         setError(data.message || 'Failed to place order');
@@ -156,10 +152,8 @@ const Checkout = () => {
         )}
 
         <div className="checkout-content">
-          {/* Order Form */}
           <div className="checkout-form">
             <form onSubmit={handleSubmit}>
-              {/* Customer Information */}
               <div className="form-section">
                 <div className="section-header">
                   <User size={24} />
@@ -217,7 +211,6 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Order Type */}
               <div className="form-section">
                 <div className="section-header">
                   <MapPin size={24} />
@@ -274,14 +267,12 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Customization Options */}
               <div className="form-section">
                 <div className="section-header">
                   <Gift size={24} />
                   <h2>Customize Your Order</h2>
                 </div>
                 
-                {/* Check if cart has cakes/pastries */}
                 {cartItems.some(item => 
                   item.name.toLowerCase().includes('cake') || 
                   item.name.toLowerCase().includes('pastry')
@@ -308,7 +299,6 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {/* Add Bouquet */}
                 <div style={{
                   padding: '1rem',
                   background: '#fef2f7',
@@ -359,7 +349,6 @@ const Checkout = () => {
                   )}
                 </div>
 
-                {/* Add Greeting Card */}
                 <div style={{
                   padding: '1rem',
                   background: '#fef3c7',
@@ -413,7 +402,6 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Schedule & Payment */}
               <div className="form-section">
                 <div className="section-header">
                   <Clock size={24} />
@@ -481,7 +469,6 @@ const Checkout = () => {
             </form>
           </div>
 
-          {/* Order Summary */}
           <div className="order-summary">
             <h2>Order Summary</h2>
             <div className="summary-items">

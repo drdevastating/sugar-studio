@@ -1,11 +1,11 @@
-// frontend/src/components/Home.jsx
+// frontend/src/components/Home.jsx - FIXED for production
 import { useState, useEffect } from "react"
 import { Star, Plus, Heart, Check } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import { getApiUrl } from "../config/api"  // ✅ Import this
 import logo from "../assets/logo.jpeg"
 import "./styles/Home.css"
 import RecommendedProducts from './RecommendedProducts';
-
 
 const Home = () => {
   const [favorites, setFavorites] = useState([])
@@ -16,16 +16,17 @@ const Home = () => {
   const { addToCart } = useCart()
   const customer = JSON.parse(localStorage.getItem('customer') || 'null');
 
-
-  // Fetch products from backend
+  // ✅ FIXED: Use getApiUrl for all fetch calls
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/products?available=true')
+        const url = getApiUrl('/api/products?available=true');  // ✅ Use getApiUrl
+        console.log('Fetching from:', url);  // Debug log
+        
+        const response = await fetch(url)
         const result = await response.json()
         
         if (result.status === 'success') {
-          // Transform backend data to match your frontend format
           const transformedItems = result.data.map(product => ({
             id: product.id,
             name: product.name,
@@ -40,8 +41,8 @@ const Home = () => {
           setError('Failed to fetch products')
         }
       } catch (err) {
-        setError('Failed to connect to server')
         console.error('Error fetching products:', err)
+        setError('Failed to connect to server')
       } finally {
         setLoading(false)
       }
@@ -56,11 +57,7 @@ const Home = () => {
 
   const handleAddToCart = (item) => {
     addToCart(item, 1)
-    
-    // Show "Added" feedback
     setAddedToCart(prev => ({ ...prev, [item.id]: true }))
-    
-    // Reset after 2 seconds
     setTimeout(() => {
       setAddedToCart(prev => ({ ...prev, [item.id]: false }))
     }, 2000)

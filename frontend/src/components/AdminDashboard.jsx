@@ -1,4 +1,4 @@
-// frontend/src/components/AdminDashboard.jsx - FIXED: No flickering
+// frontend/src/components/AdminDashboard.jsx - FIXED for production
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,6 +11,7 @@ import {
   Trash2,
   LogOut
 } from 'lucide-react';
+import { getApiUrl } from '../config/api';  // ✅ ADD THIS
 import './styles/AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -24,7 +25,6 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  // FIXED: Only check auth once on mount
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
     const savedUser = localStorage.getItem('user');
@@ -46,16 +46,14 @@ const AdminDashboard = () => {
       return;
     }
 
-    // All checks passed, fetch data
     fetchData();
-  }, []); // Only run once on mount
+  }, []);
 
   const fetchData = async () => {
     const token = localStorage.getItem('accessToken');
 
     try {
-      // Fetch products
-      const productsRes = await fetch('/api/products');
+      const productsRes = await fetch(getApiUrl('/api/products'));  // ✅ FIXED
       const productsData = await productsRes.json();
       
       if (productsData.status === 'success') {
@@ -63,8 +61,7 @@ const AdminDashboard = () => {
         setStats(prev => ({ ...prev, totalProducts: productsData.count }));
       }
 
-      // Fetch orders stats
-      const ordersRes = await fetch('/api/orders/stats', {
+      const ordersRes = await fetch(getApiUrl('/api/orders/stats'), {  // ✅ FIXED
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const ordersData = await ordersRes.json();
@@ -77,8 +74,7 @@ const AdminDashboard = () => {
         }));
       }
 
-      // Fetch customers count
-      const customersRes = await fetch('/api/customers', {
+      const customersRes = await fetch(getApiUrl('/api/customers'), {  // ✅ FIXED
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const customersData = await customersRes.json();
@@ -109,7 +105,7 @@ const AdminDashboard = () => {
     const token = localStorage.getItem('accessToken');
 
     try {
-      const response = await fetch(`/api/products/${id}`, {
+      const response = await fetch(getApiUrl(`/api/products/${id}`), {  // ✅ FIXED
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -134,7 +130,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      {/* Header */}
       <div className="dashboard-header">
         <div>
           <h1>Admin Dashboard</h1>
@@ -146,7 +141,6 @@ const AdminDashboard = () => {
         </button>
       </div>
 
-      {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon products">
@@ -189,7 +183,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="dashboard-section">
         <div className="section-header">
           <h2>Quick Actions</h2>
@@ -213,7 +206,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Products Section */}
       <div className="dashboard-section">
         <div className="section-header">
           <h2>Products Management</h2>

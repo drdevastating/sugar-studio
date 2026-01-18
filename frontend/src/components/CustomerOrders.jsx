@@ -1,49 +1,9 @@
-// frontend/src/components/CustomerOrders.jsx
+// frontend/src/components/CustomerOrders.jsx - FIXED for production
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Clock, Eye, LogIn } from 'lucide-react';
+import { getApiUrl } from '../config/api';  // ✅ ADD THIS
 import './styles/CustomerOrders.css';
-
-// Note: Add this CSS to CustomerOrders.css:
-/*
-.not-logged-in {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: white;
-  border-radius: 15px;
-  max-width: 500px;
-  margin: 0 auto;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.not-logged-in h2 {
-  font-size: 1.75rem;
-  color: #374151;
-  margin: 1rem 0 0.5rem;
-}
-
-.not-logged-in p {
-  color: #6b7280;
-  margin-bottom: 2rem;
-}
-
-.login-redirect-btn {
-  background: linear-gradient(135deg, #d946a6, #c026d3);
-  color: white;
-  border: none;
-  padding: 0.85rem 2rem;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-}
-
-.login-redirect-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(217, 70, 166, 0.4);
-}
-*/
 
 const CustomerOrders = () => {
   const navigate = useNavigate();
@@ -52,7 +12,6 @@ const CustomerOrders = () => {
   const [customer, setCustomer] = useState(null);
 
   useEffect(() => {
-    // Get customer from localStorage
     const savedCustomer = localStorage.getItem('customer');
     const accessToken = localStorage.getItem('accessToken');
 
@@ -69,7 +28,7 @@ const CustomerOrders = () => {
   const fetchOrders = async (customerEmail) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/orders/customer?email=${encodeURIComponent(customerEmail)}`);
+      const response = await fetch(getApiUrl(`/api/orders/customer?email=${encodeURIComponent(customerEmail)}`));  // ✅ FIXED
       const data = await response.json();
       
       if (data.status === 'success') {
@@ -107,7 +66,6 @@ const CustomerOrders = () => {
     });
   };
 
-  // If not logged in
   if (!customer && !loading) {
     return (
       <div className="customer-orders-page">

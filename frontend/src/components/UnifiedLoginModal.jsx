@@ -1,6 +1,7 @@
-// frontend/src/components/UnifiedLoginModal.jsx - Customer Only (Admin uses /login page)
+// frontend/src/components/UnifiedLoginModal.jsx - FIXED for production
 import { useState, useEffect, useRef } from 'react';
 import { X, User, Mail, LogIn, ArrowLeft } from 'lucide-react';
+import { getApiUrl } from '../config/api';  // ✅ ADD THIS
 
 const UnifiedLoginModal = ({ onClose, onSuccess }) => {
   const [loginMethod, setLoginMethod] = useState(null);
@@ -18,7 +19,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     phone: ''
   });
 
-  // Cleanup Google button when component unmounts or method changes
   useEffect(() => {
     return () => {
       if (googleButtonRef.current) {
@@ -34,7 +34,7 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
 
     try {
       const endpoint = isRegister ? '/api/auth/customer/register' : '/api/auth/customer/login';
-      const response = await fetch(endpoint, {
+      const response = await fetch(getApiUrl(endpoint), {  // ✅ FIXED
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailData)
@@ -122,7 +122,7 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
     try {
       const userObject = JSON.parse(atob(response.credential.split('.')[1]));
 
-      const authResponse = await fetch('/api/auth/customer/google', {
+      const authResponse = await fetch(getApiUrl('/api/auth/customer/google'), {  // ✅ FIXED
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -300,7 +300,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
           <X size={24} />
         </button>
 
-        {/* Customer Login - Choose Method */}
         {!loginMethod && (
           <div>
             <div style={styles.header}>
@@ -312,7 +311,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
             {error && <div style={styles.error}>{error}</div>}
 
             <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-              {/* Google Sign-In Button Container */}
               <div 
                 ref={googleButtonRef}
                 style={styles.googleButtonContainer}
@@ -341,7 +339,6 @@ const UnifiedLoginModal = ({ onClose, onSuccess }) => {
           </div>
         )}
 
-        {/* Customer Email Login/Register */}
         {loginMethod === 'email' && (
           <div>
             <button style={styles.backBtn} onClick={() => setLoginMethod(null)}>

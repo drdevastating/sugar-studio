@@ -1,7 +1,8 @@
-// frontend/src/components/OrderConfirmation.jsx
+// frontend/src/components/OrderConfirmation.jsx - FIXED for production
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Package, Mail, ArrowRight } from 'lucide-react';
+import { getApiUrl } from '../config/api';  // ✅ ADD THIS
 import './styles/OrderConfirmation.css';
 
 const OrderConfirmation = () => {
@@ -16,7 +17,7 @@ const OrderConfirmation = () => {
 
   const fetchOrderDetails = async () => {
     try {
-      const response = await fetch(`/api/orders/track/${orderNumber}`);
+      const response = await fetch(getApiUrl(`/api/orders/track/${orderNumber}`));  // ✅ FIXED
       const data = await response.json();
       
       if (data.status === 'success') {

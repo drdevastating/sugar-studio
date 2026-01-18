@@ -10,6 +10,7 @@
     "node": ">=18.x"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "cors": "^2.8.5",
@@ -23,5 +24,8 @@
     "multer-storage-cloudinary": "^2.2.1",
     "nodemailer": "^7.0.12",
     "pg": "^8.16.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
   }
 }

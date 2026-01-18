@@ -1,7 +1,8 @@
-// frontend/src/components/OrderTracking.jsx
+// frontend/src/components/OrderTracking.jsx - FIXED for production
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Package, Truck, CheckCircle, Clock, MapPin, Phone, Mail, Calendar } from 'lucide-react';
+import { getApiUrl } from '../config/api';  // ✅ ADD THIS
 import './styles/OrderTracking.css';
 
 const OrderTracking = () => {
@@ -25,7 +26,7 @@ const OrderTracking = () => {
     setError('');
     
     try {
-      const response = await fetch(`/api/orders/track/${num}`);
+      const response = await fetch(getApiUrl(`/api/orders/track/${num}`));  // ✅ FIXED
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -101,7 +102,6 @@ const OrderTracking = () => {
           <p>Enter your order number to track your delicious treats</p>
         </div>
 
-        {/* Search Form */}
         <form onSubmit={handleSearch} className="tracking-search">
           <input
             type="text"
@@ -123,7 +123,6 @@ const OrderTracking = () => {
 
         {order && (
           <>
-            {/* Order Info Card */}
             <div className="order-info-card">
               <div className="order-header-info">
                 <div>
@@ -155,7 +154,6 @@ const OrderTracking = () => {
               </div>
             </div>
 
-            {/* Progress Tracker */}
             <div className="progress-tracker">
               <h3>Order Status</h3>
               <div className="progress-steps">
@@ -188,7 +186,6 @@ const OrderTracking = () => {
               </div>
             </div>
 
-            {/* Order Items */}
             <div className="order-items-card">
               <h3>Order Items</h3>
               <div className="items-list">
@@ -205,7 +202,6 @@ const OrderTracking = () => {
               </div>
             </div>
 
-            {/* Contact Info */}
             <div className="contact-card">
               <h3>Need Help?</h3>
               <p>Contact us if you have any questions about your order</p>

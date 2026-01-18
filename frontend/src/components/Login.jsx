@@ -1,7 +1,8 @@
-// frontend/src/components/Login.jsx - Fixed for Admin Direct Login
+// frontend/src/components/Login.jsx - FIXED for production
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { getApiUrl } from '../config/api';  // ✅ ADD THIS
 import './styles/Auth.css';
 
 const Login = ({ onLoginSuccess }) => {
@@ -11,7 +12,6 @@ const Login = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Check if already logged in
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
     const savedUser = localStorage.getItem('user');
@@ -34,7 +34,7 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/admin/login', {
+      const response = await fetch(getApiUrl('/api/auth/admin/login'), {  // ✅ FIXED
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -43,17 +43,14 @@ const Login = ({ onLoginSuccess }) => {
       const data = await response.json();
 
       if (data.status === 'success') {
-        // Store tokens and user data
         localStorage.setItem('accessToken', data.data.accessToken);
         localStorage.setItem('refreshToken', data.data.refreshToken);
         localStorage.setItem('user', JSON.stringify(data.data.user));
         
-        // Call success callback
         if (onLoginSuccess) {
           onLoginSuccess(data.data, 'admin');
         }
         
-        // Navigate to dashboard
         navigate('/admin/dashboard');
       } else {
         setError(data.message || 'Login failed');
