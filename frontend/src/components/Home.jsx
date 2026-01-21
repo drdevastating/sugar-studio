@@ -1,8 +1,8 @@
-// frontend/src/components/Home.jsx - FIXED for production
+// frontend/src/components/Home.jsx - FIXED for production images
 import { useState, useEffect } from "react"
 import { Star, Plus, Heart, Check } from "lucide-react"
 import { useCart } from "../context/CartContext"
-import { getApiUrl } from "../config/api"  // ✅ Import this
+import { getApiUrl } from "../config/api"
 import logo from "../assets/logo.jpeg"
 import "./styles/Home.css"
 import RecommendedProducts from './RecommendedProducts';
@@ -16,12 +16,29 @@ const Home = () => {
   const { addToCart } = useCart()
   const customer = JSON.parse(localStorage.getItem('customer') || 'null');
 
-  // ✅ FIXED: Use getApiUrl for all fetch calls
+  // ✅ FIXED: Helper function to get correct image URL
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '/placeholder.svg';
+    
+    // If it's already a full URL (Cloudinary), return as-is
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    // If it's a local path, convert to API URL
+    if (imageUrl.startsWith('/uploads')) {
+      return getApiUrl(imageUrl);
+    }
+    
+    // Fallback
+    return '/placeholder.svg';
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const url = getApiUrl('/api/products?available=true');  // ✅ Use getApiUrl
-        console.log('Fetching from:', url);  // Debug log
+        const url = getApiUrl('/api/products?available=true');
+        console.log('Fetching from:', url);
         
         const response = await fetch(url)
         const result = await response.json()
@@ -36,6 +53,10 @@ const Home = () => {
             category_name: product.category_name || 'Uncategorized',
             rating: 4.5
           }))
+          
+          console.log('Products loaded:', transformedItems.length);
+          console.log('Sample image URL:', transformedItems[0]?.image_url);
+          
           setMenuItems(transformedItems)
         } else {
           setError('Failed to fetch products')
@@ -144,10 +165,11 @@ const Home = () => {
               <div key={item.id} className="menu-item">
                 <div className="item-image-container">
                   <img 
-                    src={item.image_url || "/placeholder.svg"} 
+                    src={getImageUrl(item.image_url)}
                     alt={item.name} 
                     className="item-image" 
                     onError={(e) => {
+                      console.error('Image failed to load:', item.image_url);
                       e.target.src = "/placeholder.svg"
                     }}
                   />
